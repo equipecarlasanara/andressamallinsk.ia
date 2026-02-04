@@ -154,13 +154,13 @@ export default function ContentLibrary() {
                 Buscando ideias estratégicas...
               </p>
             )}
-            {themes && themes[activeTab] && themes[activeTab].length > 0 ? (
+            {!isLoadingThemes && themes && themes[activeTab] && (
               <div className="space-y-2">
                 {themes[activeTab].map((theme, index) => {
-                  const isSelected = selectedTheme?.theme.title === theme.title && selectedTheme.type === activeTab;
+                  const isSelected = selectedTheme && selectedTheme.theme.title === theme.title && selectedTheme.type === activeTab;
                   return (
                     <button
-                      key={`theme-${index}`}
+                      key={`${activeTab}-${index}`}
                       onClick={() => handleGenerateContent(theme)}
                       className={`w-full text-left p-4 rounded-md transition-colors ${
                         isSelected
@@ -175,12 +175,11 @@ export default function ContentLibrary() {
                   );
                 })}
               </div>
-            ) : (
-              !isLoadingThemes && (
-                <p className="text-center text-[#CBC8C9]/50 mt-8" data-testid="no-themes-message">
-                  Gere os temas para o seu nicho.
-                </p>
-              )
+            )}
+            {!isLoadingThemes && (!themes || !themes[activeTab]) && (
+              <p className="text-center text-[#CBC8C9]/50 mt-8" data-testid="no-themes-message">
+                Gere os temas para o seu nicho.
+              </p>
             )}
           </div>
         </div>
