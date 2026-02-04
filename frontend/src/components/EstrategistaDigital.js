@@ -104,7 +104,7 @@ export default function EstrategistaDigital() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="border-t border-[#3A0A16] p-4">
+      <div className="border-t border-[#3A0A16] p-4" style={{ paddingBottom: '60px' }}>
         <form onSubmit={handleSendMessage} className="flex gap-3">
           <input
             type="text"
