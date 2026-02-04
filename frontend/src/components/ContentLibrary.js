@@ -9,14 +9,6 @@ const getAuthHeaders = () => ({
   headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
 });
 
-const TABS = [
-  { key: 'reels', label: 'Reels' },
-  { key: 'carrossel', label: 'Carrossel' },
-  { key: 'postEstatico', label: 'Post Estático' },
-  { key: 'stories', label: 'Stories' },
-  { key: 'ads', label: 'Criativos (ADS)' },
-];
-
 export default function ContentLibrary() {
   const [niche, setNiche] = useState('');
   const [themes, setThemes] = useState(null);
@@ -26,6 +18,15 @@ export default function ContentLibrary() {
   const [isLoadingThemes, setIsLoadingThemes] = useState(false);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [error, setError] = useState('');
+
+  const tabs = ['reels', 'carrossel', 'postEstatico', 'stories', 'ads'];
+  const tabLabels = {
+    reels: 'Reels',
+    carrossel: 'Carrossel',
+    postEstatico: 'Post Estático',
+    stories: 'Stories',
+    ads: 'Criativos (ADS)'
+  };
 
   const handleGenerateThemes = async () => {
     if (!niche.trim()) return;
@@ -98,6 +99,52 @@ export default function ContentLibrary() {
     }
   };
 
+  const renderThemesList = () => {
+    if (isLoadingThemes) {
+      return (
+        <p className="text-center text-[#CBC8C9]/70" data-testid="loading-themes">
+          Buscando ideias estratégicas...
+        </p>
+      );
+    }
+
+    if (!themes || !themes[activeTab]) {
+      return (
+        <p className="text-center text-[#CBC8C9]/50 mt-8" data-testid="no-themes-message">
+          Gere os temas para o seu nicho.
+        </p>
+      );
+    }
+
+    const currentThemes = themes[activeTab];
+    const themeItems = [];
+    
+    for (let i = 0; i < currentThemes.length; i++) {
+      const theme = currentThemes[i];
+      const isSelected = selectedTheme && 
+        selectedTheme.theme.title === theme.title && 
+        selectedTheme.type === activeTab;
+      
+      themeItems.push(
+        <button
+          key={`${activeTab}-${i}`}
+          onClick={() => handleGenerateContent(theme)}
+          className={`w-full text-left p-4 rounded-md transition-colors ${
+            isSelected
+              ? 'bg-[#3A0A16] border border-[#D4AF37]'
+              : 'bg-black/20 hover:bg-[#3A0A16]/50 border border-transparent'
+          }`}
+          data-testid={`theme-item-${i}`}
+        >
+          <h3 className="font-semibold text-white text-sm mb-1">{theme.title}</h3>
+          <p className="text-xs text-[#CBC8C9]/70">{theme.description}</p>
+        </button>
+      );
+    }
+
+    return <div className="space-y-2">{themeItems}</div>;
+  };
+
   return (
     <div className="h-full flex flex-col" data-testid="content-library">
       <div className="border-b border-[#3A0A16] p-6">
@@ -132,55 +179,24 @@ export default function ContentLibrary() {
       <div className="flex-1 flex overflow-hidden">
         <div className="w-2/5 border-r border-[#3A0A16] flex flex-col" data-testid="themes-panel">
           <div className="flex border-b border-[#3A0A16]">
-            {TABS.map((tab) => (
+            {tabs.map((tab) => (
               <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
+                key={tab}
+                onClick={() => setActiveTab(tab)}
                 className={`flex-1 p-3 text-sm font-semibold transition-colors ${
-                  activeTab === tab.key
+                  activeTab === tab
                     ? 'bg-[#3A0A16] text-white border-b-2 border-[#D4AF37]'
                     : 'text-[#CBC8C9]/70 hover:bg-[#3A0A16]/30'
                 }`}
-                data-testid={`tab-${tab.key}`}
+                data-testid={`tab-${tab}`}
               >
-                {tab.label}
+                {tabLabels[tab]}
               </button>
             ))}
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
-            {isLoadingThemes && (
-              <p className="text-center text-[#CBC8C9]/70" data-testid="loading-themes">
-                Buscando ideias estratégicas...
-              </p>
-            )}
-            {!isLoadingThemes && themes && themes[activeTab] && (
-              <div className="space-y-2">
-                {themes[activeTab].map((theme, index) => {
-                  const isSelected = selectedTheme && selectedTheme.theme.title === theme.title && selectedTheme.type === activeTab;
-                  return (
-                    <button
-                      key={`${activeTab}-${index}`}
-                      onClick={() => handleGenerateContent(theme)}
-                      className={`w-full text-left p-4 rounded-md transition-colors ${
-                        isSelected
-                          ? 'bg-[#3A0A16] border border-[#D4AF37]'
-                          : 'bg-black/20 hover:bg-[#3A0A16]/50 border border-transparent'
-                      }`}
-                      data-testid={`theme-item-${index}`}
-                    >
-                      <h3 className="font-semibold text-white text-sm mb-1">{theme.title}</h3>
-                      <p className="text-xs text-[#CBC8C9]/70">{theme.description}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            {!isLoadingThemes && (!themes || !themes[activeTab]) && (
-              <p className="text-center text-[#CBC8C9]/50 mt-8" data-testid="no-themes-message">
-                Gere os temas para o seu nicho.
-              </p>
-            )}
+            {renderThemesList()}
           </div>
         </div>
 
@@ -207,16 +223,15 @@ export default function ContentLibrary() {
                 Criando roteiro...
               </p>
             )}
-            {content ? (
+            {content && !isLoadingContent && (
               <div className="text-[#CBC8C9]/90 whitespace-pre-wrap leading-relaxed" data-testid="generated-content">
                 {content}
               </div>
-            ) : (
-              !isLoadingContent && (
-                <p className="text-center text-[#CBC8C9]/50 mt-16" data-testid="no-content-message">
-                  Selecione um tema à esquerda para ver o roteiro aqui.
-                </p>
-              )
+            )}
+            {!content && !isLoadingContent && (
+              <p className="text-center text-[#CBC8C9]/50 mt-16" data-testid="no-content-message">
+                Selecione um tema à esquerda para ver o roteiro aqui.
+              </p>
             )}
           </div>
         </div>
