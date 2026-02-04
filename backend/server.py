@@ -144,6 +144,10 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
+@api_router.get("/")
+async def root():
+    return {"message": "Estrategista API"}
+
 @api_router.post("/auth/register", response_model=TokenResponse)
 async def register(user_data: UserCreate):
     existing = await db.users.find_one({"email": user_data.email}, {"_id": 0})
