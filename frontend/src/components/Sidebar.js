@@ -1,0 +1,60 @@
+import { Target, BookOpen, Brain, LogOut } from 'lucide-react';
+
+export default function Sidebar({ activeView, setActiveView, user, onLogout }) {
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard de Metas', icon: Target },
+    { id: 'biblioteca', label: 'Biblioteca de Conteúdo', icon: BookOpen },
+    { id: 'estrategista', label: 'Estrategista Digital', icon: Brain },
+  ];
+
+  return (
+    <aside className="w-64 bg-[#19161B] border-r border-[#3A0A16] flex flex-col p-4" data-testid="sidebar">
+      <div className="text-center py-4">
+        <img 
+          src="/lion-profile.jpg" 
+          alt="Estrategista" 
+          className="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-[#D4AF37] object-cover"
+          data-testid="profile-image"
+        />
+        <h1 className="font-title text-3xl font-bold" style={{ color: '#D4AF37' }} data-testid="sidebar-title">
+          ESTRATEGISTA
+        </h1>
+        <h2 className="text-sm text-[#CBC8C9]/70 tracking-widest mt-1">A ESTRATEGISTA</h2>
+        {user && (
+          <p className="text-xs text-[#CBC8C9]/50 mt-2" data-testid="user-name">{user.name}</p>
+        )}
+      </div>
+
+      <nav className="mt-8 flex flex-col space-y-2 flex-1">
+        {navItems.map((item) => {
+          const isActive = activeView === item.id;
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveView(item.id)}
+              className={`flex items-center p-3 rounded-lg transition-colors duration-200 ${
+                isActive
+                  ? 'bg-[#3A0A16] text-white'
+                  : 'text-[#CBC8C9]/80 hover:bg-[#3A0A16]/50 hover:text-white'
+              }`}
+              data-testid={`nav-${item.id}`}
+            >
+              <Icon className="w-5 h-5 mr-4" />
+              <span className="font-medium text-sm">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      <button
+        onClick={onLogout}
+        className="flex items-center p-3 rounded-lg text-[#CBC8C9]/80 hover:bg-[#3A0A16]/50 hover:text-white transition-colors duration-200 mt-auto"
+        data-testid="logout-button"
+      >
+        <LogOut className="w-5 h-5 mr-4" />
+        <span className="font-medium text-sm">Sair</span>
+      </button>
+    </aside>
+  );
+}
