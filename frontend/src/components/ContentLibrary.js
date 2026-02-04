@@ -154,23 +154,26 @@ export default function ContentLibrary() {
                 Buscando ideias estratégicas...
               </p>
             )}
-            {themes && themes[activeTab] ? (
+            {themes && themes[activeTab] && themes[activeTab].length > 0 ? (
               <div className="space-y-2">
-                {themes[activeTab].map((theme, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleGenerateContent(theme)}
-                    className={`w-full text-left p-4 rounded-md transition-colors ${
-                      selectedTheme?.theme.title === theme.title && selectedTheme.type === activeTab
-                        ? 'bg-[#3A0A16] border border-[#D4AF37]'
-                        : 'bg-black/20 hover:bg-[#3A0A16]/50 border border-transparent'
-                    }`}
-                    data-testid={`theme-item-${index}`}
-                  >
-                    <h3 className="font-semibold text-white text-sm mb-1">{theme.title}</h3>
-                    <p className="text-xs text-[#CBC8C9]/70">{theme.description}</p>
-                  </button>
-                ))}
+                {themes[activeTab].map((theme, index) => {
+                  const isSelected = selectedTheme?.theme.title === theme.title && selectedTheme.type === activeTab;
+                  return (
+                    <button
+                      key={`theme-${index}`}
+                      onClick={() => handleGenerateContent(theme)}
+                      className={`w-full text-left p-4 rounded-md transition-colors ${
+                        isSelected
+                          ? 'bg-[#3A0A16] border border-[#D4AF37]'
+                          : 'bg-black/20 hover:bg-[#3A0A16]/50 border border-transparent'
+                      }`}
+                      data-testid={`theme-item-${index}`}
+                    >
+                      <h3 className="font-semibold text-white text-sm mb-1">{theme.title}</h3>
+                      <p className="text-xs text-[#CBC8C9]/70">{theme.description}</p>
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               !isLoadingThemes && (
