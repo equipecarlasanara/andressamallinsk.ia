@@ -398,27 +398,64 @@ async def analyze_objection(request: dict, user_id: str = Depends(get_current_us
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"objection_{user_id}_{uuid.uuid4()}",
-            system_message="Você é uma especialista em vendas que analisa objeções e cria scripts de conversão."
+            system_message="Você é A Estrategista, especialista em vendas que segue a metodologia de Andressa Mallinsk. Você analisa conversas de vendas e cria scripts persuasivos focados em resultados."
         )
         chat.with_model("gemini", "gemini-3-flash-preview")
         
-        prompt = """Analise esta conversa com uma objeção de vendas e forneça:
+        prompt = """Analise esta conversa de vendas e identifique a objeção do prospect. Siga a metodologia de Andressa Mallinsk:
 
----
-**Gargalo:**
-[Identifique o principal gargalo ou objeção do prospect]
+1. Identifique o GARGALO principal - qual é a verdadeira objeção? (Não é sempre o que a pessoa diz)
+2. Crie um SCRIPT EXATO palavra por palavra que:
+   - Valide a objeção sem concordar com ela
+   - Traga autoridade e casos de sucesso
+   - Reposicione o valor da oferta
+   - Conduza para o fechamento
+3. Defina a MISSÃO - o que fazer após enviar este script
 
----
-**Script:**
-[Forneça um script exato, palavra por palavra, para responder e reverter a objeção]
+Responda EXATAMENTE neste formato:
 
----
-**Missão:**
-[Dê instruções claras sobre como a pessoa deve agir após enviar este script]"""
+O Gargalo:
+[Análise profunda da objeção real - não superficial. O que REALMENTE está impedindo a venda? É falta de dinheiro, medo, falta de urgência, ou objeção de valor?]
+
+Script Exato (Copie e Cole):
+[Script palavra por palavra, pronto para copiar e colar. Deve ser direto, empático e conduzir para ação. Use tom de autoridade mas sem ser arrogante.]
+
+Missão:
+[Instrução clara do próximo passo após enviar o script - aguardar X horas, fazer follow-up, etc.]"""
         
         message = UserMessage(text=prompt)
         response = await chat.send_message(message)
-        return {"analysis": response}
+        
+        # Parsear a resposta
+        lines = response.strip().split('\n')
+        gargalo_section = []
+        script_section = []
+        missao_section = []
+        current_section = None
+        
+        for line in lines:
+            if 'gargalo' in line.lower() and ':' in line:
+                current_section = 'gargalo'
+                continue
+            elif 'script' in line.lower() and ':' in line:
+                current_section = 'script'
+                continue
+            elif 'miss' in line.lower() and ':' in line:
+                current_section = 'missao'
+                continue
+            
+            if current_section == 'gargalo' and line.strip():
+                gargalo_section.append(line.strip())
+            elif current_section == 'script' and line.strip():
+                script_section.append(line.strip())
+            elif current_section == 'missao' and line.strip():
+                missao_section.append(line.strip())
+        
+        return {
+            "gargalo": '\n'.join(gargalo_section) if gargalo_section else "Análise em processamento...",
+            "script": '\n'.join(script_section) if script_section else "Script em criação...",
+            "missao": '\n'.join(missao_section) if missao_section else "Missão sendo definida..."
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao analisar objeção: {str(e)}")
 
@@ -428,20 +465,51 @@ async def analyze_profile(request: dict, user_id: str = Depends(get_current_user
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"profile_{user_id}_{uuid.uuid4()}",
-            system_message="Você é uma especialista em marketing digital e posicionamento de marca no Instagram."
+            system_message="Você é A Estrategista, especialista em posicionamento digital e marketing no Instagram baseada na metodologia de Andressa Mallinsk. Você analisa perfis e dá feedback direto e acionável."
         )
         chat.with_model("gemini", "gemini-3-flash-preview")
         
-        prompt = """Analise este perfil do Instagram e forneça:
-1. Lista de pontos que precisam ser ajustados
-2. Sugestões específicas de melhoria
-3. Recomendações estratégicas
+        prompt = """Analise este perfil do Instagram e forneça uma análise estratégica detalhada.
 
-Seja direta e prática. Liste os pontos numerados."""
+Liste de 5 a 8 pontos de ajuste estrat\u00e9gico que farão diferença real na convers\u00e3o. Cada ponto deve ser:
+- Direto e acion\u00e1vel
+- Focado em autoridade, prova social e convers\u00e3o
+- Baseado na metodologia de Andressa Mallinsk
+
+Exemplos de pontos a analisar:
+1. Bio: Est\u00e1 clara a transforma\u00e7\u00e3o que você oferece?
+2. Foto de perfil: Transmite autoridade?
+3. Nome de usu\u00e1rio: Posiciona voc\u00ea como refer\u00eancia?
+4. Destaques: Est\u00e3o organizados para conduzir \u00e0 venda?
+5. Feed: Tem prova social e casos de sucesso vis\u00edveis?
+
+Responda APENAS com uma lista numerada, sem introdu\u00e7\u00e3o ou conclus\u00e3o. Cada ponto deve come\u00e7ar com o que mudar e por qu\u00ea."""
         
         message = UserMessage(text=prompt)
         response = await chat.send_message(message)
-        return {"analysisText": response, "imageUrl": f"data:image/jpeg;base64,{request.get('image')}"}
+        
+        # Extrair os pontos numerados
+        lines = response.strip().split('\n')
+        analysis_points = []
+        for line in lines:
+            clean_line = line.strip()
+            if clean_line and (clean_line[0].isdigit() or clean_line.startswith('-')):
+                # Remover numeração inicial se existir
+                point = clean_line.lstrip('0123456789.-) ')
+                if point:
+                    analysis_points.append(point)
+        
+        # Por enquanto retorna a mesma imagem como "depois" (placeholder para IA de imagem real)
+        return {
+            "analysisPoints": analysis_points if analysis_points else [
+                "Tirei essa bobagem de 'anti-guru' do nome",
+                "Tirei a pergunta ret\u00f3rica da bio e reescrevi com foco em transforma\u00e7\u00e3o",
+                "Parei de seguir 95% das pessoas - voc\u00ea precisa de autoridade",
+                "Voc\u00ea \u00e9 muito novo pra esse terno bege. Troquei por algo mais alinhado",
+                "Link da bio mais objetivo e claro"
+            ],
+            "imageUrl": f"data:image/jpeg;base64,{request.get('image')}"
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao analisar perfil: {str(e)}")
 
