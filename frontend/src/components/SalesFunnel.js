@@ -72,29 +72,73 @@ export default function SalesFunnelBuilder() {
     const lines = text.split('\n');
     
     let currentStage = null;
+    let newMetrics = {};
+    
     for (const line of lines) {
-      if (line.startsWith('###')) {
-        if (currentStage) stages.push(currentStage);
-        currentStage = { name: line.replace(/###/g, '').trim(), leads: 0, conversion: 0 };
+      // Detectar início de estágio (### ou **)
+      if (line.startsWith('###') || (line.startsWith('**') && !line.includes('Ações') && !line.includes('Leads') && !line.includes('Conversão'))) {
+        if (currentStage && currentStage.leads > 0) stages.push(currentStage);
+        const stageName = line.replace(/[#*]/g, '').trim();
+        if (stageName && !stageName.toLowerCase().includes('métrica')) {
+          currentStage = { name: stageName, leads: 0, conversion: 0, actions: '' };
+        }
       } else if (currentStage) {
-        const leadsMatch = line.match(/Leads:\\s*(\\d+)/i);
-        const convMatch = line.match(/Convers\u00e3o:\\s*(\\d+)%/i);
-        if (leadsMatch) currentStage.leads = parseInt(leadsMatch[1]);
-        if (convMatch) currentStage.conversion = parseInt(convMatch[1]);
+        // Extrair leads - múltiplos padrões
+        const leadsPatterns = [
+          /\*\*Leads:\*\*\s*(\d+)/i,
+          /Leads:\s*(\d+)/i,
+          /(\d+)\s*leads/i
+        ];
+        for (const pattern of leadsPatterns) {
+          const match = line.match(pattern);
+          if (match) {
+            currentStage.leads = parseInt(match[1]);
+            break;
+          }
+        }
+        
+        // Extrair conversão - múltiplos padrões
+        const convPatterns = [
+          /\*\*Conversão:\*\*\s*(\d+)%/i,
+          /Conversão:\s*(\d+)%/i,
+          /(\d+)%\s*(?:de\s*)?convers[aã]o/i
+        ];
+        for (const pattern of convPatterns) {
+          const match = line.match(pattern);
+          if (match) {
+            currentStage.conversion = parseInt(match[1]);
+            break;
+          }
+        }
+        
+        // Extrair ações
+        const actionsMatch = line.match(/\*\*Ações:\*\*\s*(.+)/i) || line.match(/Ações:\s*(.+)/i);
+        if (actionsMatch) {
+          currentStage.actions = actionsMatch[1].replace(/[\[\]]/g, '').trim();
+        }
       }
       
-      if (line.includes('Custo por Lead')) {
-        const cplMatch = line.match(/R\\$\\s*([\\d.,]+)/);
-        if (cplMatch) setMetrics(m => ({ ...m, cpl: parseFloat(cplMatch[1].replace(',', '.')) }));
+      // Extrair métricas globais
+      if (line.includes('Custo por Lead') || line.includes('CPL')) {
+        const cplMatch = line.match(/R\$\s*([\d.,]+)/);
+        if (cplMatch) newMetrics.cpl = parseFloat(cplMatch[1].replace('.', '').replace(',', '.'));
       }
-      if (line.includes('Lifetime Value')) {
-        const ltvMatch = line.match(/R\\$\\s*([\\d.,]+)/);
-        if (ltvMatch) setMetrics(m => ({ ...m, ltv: parseFloat(ltvMatch[1].replace(',', '.')) }));
+      if (line.includes('Lifetime Value') || line.includes('LTV')) {
+        const ltvMatch = line.match(/R\$\s*([\d.,]+)/);
+        if (ltvMatch) newMetrics.ltv = parseFloat(ltvMatch[1].replace('.', '').replace(',', '.'));
       }
     }
-    if (currentStage) stages.push(currentStage);
     
-    if (stages.length > 0) setFunnelStages(stages);
+    // Adicionar último estágio
+    if (currentStage && currentStage.leads > 0) stages.push(currentStage);
+    
+    // Atualizar estado se encontrou dados válidos
+    if (stages.length > 0) {
+      setFunnelStages(stages);
+    }
+    if (Object.keys(newMetrics).length > 0) {
+      setMetrics(m => ({ ...m, ...newMetrics }));
+    }
   };
 
   const handleSendMessage = async (e) => {
