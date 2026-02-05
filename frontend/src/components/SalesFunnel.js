@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Users, Eye, MessageCircle, DollarSign, TrendingDown } from 'lucide-react';
+import { Send, TrendingDown } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -9,125 +9,200 @@ const getAuthHeaders = () => ({
   headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
 });
 
-export default function SalesFunnel() {
-  const [funnelData, setFunnelData] = useState(null);
-  const [loading, setLoading] = useState(true);
+const FunnelVisualizer = ({ stages }) => {
+  if (!stages || stages.length === 0) return null;
+
+  const maxLeads = stages[0]?.leads || 1;
+
+  return (
+    <div className="mb-6 p-4 bg-black/30 border border-[#3A0A16] rounded-lg">
+      <h2 className="text-xl font-title text-center text-[#CBC8C9] mb-4">Visualização do Funil</h2>
+      <div className="flex flex-col items-center space-y-2 px-4">
+        {stages.map((stage, index) => {
+          const widthPercentage = Math.max(30, (stage.leads / maxLeads) * 100);
+          return (
+            <div key={index}>
+              <div
+                className="bg-gradient-to-r from-[#3A0A16] to-[#53050B] p-3 rounded-md text-center shadow-lg transition-all duration-500 w-full"
+                style={{ maxWidth: `${widthPercentage}%`, margin: '0 auto' }}
+              >
+                <h3 className="font-bold text-md text-white">{stage.name}</h3>
+                <p className="text-xl font-semibold text-[#D4AF37]">{stage.leads.toLocaleString('pt-BR')}</p>
+                <p className="text-xs text-[#CBC8C9]/70">Leads</p>
+              </div>
+              {index < stages.length - 1 && stage.conversion && (
+                <div className="flex flex-col items-center font-semibold text-white my-1">
+                  <TrendingDown className="h-5 w-5 text-[#CBC8C9]/50" />
+                  <span className="text-xs bg-[#19161B] px-2 py-0.5 rounded-full mt-1 border border-[#3A0A16]">
+                    {stage.conversion}% Conversão
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export default function SalesFunnelBuilder() {
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [sessionId] = useState(`funnel_${Date.now()}`);
+  const [funnelStages, setFunnelStages] = useState([]);
+  const [metrics, setMetrics] = useState({});
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    loadFunnelData();
+    // Mensagem inicial
+    setMessages([{
+      role: 'assistant',
+      content: 'Leoa! Vamos construir seu funil de vendas estratégico. Para começar, me diga: qual é o seu produto/serviço principal, para quem você vende e qual o preço?'
+    }]);
   }, []);
 
-  const loadFunnelData = async () => {
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const parseFunnelData = (text) => {
+    const stages = [];
+    const lines = text.split('\n');
+    
+    let currentStage = null;
+    for (const line of lines) {
+      if (line.startsWith('###')) {
+        if (currentStage) stages.push(currentStage);
+        currentStage = { name: line.replace(/###/g, '').trim(), leads: 0, conversion: 0 };
+      } else if (currentStage) {
+        const leadsMatch = line.match(/Leads:\\s*(\\d+)/i);
+        const convMatch = line.match(/Convers\u00e3o:\\s*(\\d+)%/i);
+        if (leadsMatch) currentStage.leads = parseInt(leadsMatch[1]);
+        if (convMatch) currentStage.conversion = parseInt(convMatch[1]);
+      }
+      
+      if (line.includes('Custo por Lead')) {
+        const cplMatch = line.match(/R\\$\\s*([\\d.,]+)/);
+        if (cplMatch) setMetrics(m => ({ ...m, cpl: parseFloat(cplMatch[1].replace(',', '.')) }));
+      }
+      if (line.includes('Lifetime Value')) {
+        const ltvMatch = line.match(/R\\$\\s*([\\d.,]+)/);
+        if (ltvMatch) setMetrics(m => ({ ...m, ltv: parseFloat(ltvMatch[1].replace(',', '.')) }));
+      }
+    }
+    if (currentStage) stages.push(currentStage);
+    
+    if (stages.length > 0) setFunnelStages(stages);
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!inputMessage.trim() || isLoading) return;
+
+    const userMessage = inputMessage.trim();
+    setInputMessage('');
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setIsLoading(true);
+
     try {
-      const response = await axios.get(`${API}/funnel/stats`, getAuthHeaders());
-      setFunnelData(response.data);
+      const response = await axios.post(
+        `${API}/ai/build-funnel`,
+        { message: userMessage, session_id: sessionId },
+        getAuthHeaders()
+      );
+      
+      const aiResponse = response.data.response;
+      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+      parseFunnelData(aiResponse);
     } catch (err) {
-      console.error('Erro ao carregar funil:', err);
-      // Dados mock para demonstração
-      setFunnelData({
-        topo: 1000,
-        meio: 250,
-        fundo: 50,
-        conversao: 15,
-        taxa_topo_meio: 25,
-        taxa_meio_fundo: 20,
-        taxa_fundo_conversao: 30
-      });
+      console.error('Erro:', err);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Erro ao processar. Tente novamente.' }]);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-full"><p className="text-xl">Carregando...</p></div>;
-  }
-
-  const stages = [
-    { id: 'topo', label: 'Topo do Funil', value: funnelData.topo, icon: Eye, color: 'from-blue-600 to-blue-400', description: 'Visitantes / Leads' },
-    { id: 'meio', label: 'Meio do Funil', value: funnelData.meio, icon: MessageCircle, color: 'from-purple-600 to-purple-400', description: 'Em Contato / Interessados' },
-    { id: 'fundo', label: 'Fundo do Funil', value: funnelData.fundo, icon: Users, color: 'from-yellow-600 to-yellow-400', description: 'Negociação' },
-    { id: 'conversao', label: 'Conversão', value: funnelData.conversao, icon: DollarSign, color: 'from-green-600 to-green-400', description: 'Vendas Fechadas' }
-  ];
-
   return (
-    <div className="p-6 h-full overflow-y-auto bg-[#19161B]" data-testid="sales-funnel">
-      <h1 className="text-4xl font-title text-[#CBC8C9] mb-6">Funil de Vendas</h1>
-      
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-black/30 border border-[#3A0A16] rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Visão Geral do Funil</h2>
-          <div className="space-y-4">
-            {stages.map((stage, index) => {
-              const width = (stage.value / funnelData.topo) * 100;
-              const Icon = stage.icon;
-              const nextStage = stages[index + 1];
-              const conversionRate = nextStage 
-                ? ((nextStage.value / stage.value) * 100).toFixed(1)
-                : null;
+    <div className="h-full flex flex-col bg-[#19161B]" data-testid="funnel-builder">
+      <div className="border-b border-[#3A0A16] p-6">
+        <h1 className="text-3xl font-title text-[#CBC8C9]">Construtor de Funil de Vendas</h1>
+        <p className="text-sm text-[#CBC8C9]/70 mt-2">Construa seu funil estratégico com a metodologia da Estrategista</p>
+      </div>
 
-              return (
-                <div key={stage.id}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-5 h-5 text-[#D4AF37]" />
-                      <h3 className="font-semibold">{stage.label}</h3>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-[#D4AF37]">{stage.value}</p>
-                      <p className="text-xs text-[#CBC8C9]/60">{stage.description}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="relative h-16 bg-[#19161B] rounded-lg overflow-hidden">
-                    <div
-                      className={`absolute inset-y-0 left-0 bg-gradient-to-r ${stage.color} flex items-center justify-center transition-all duration-500`}
-                      style={{ width: `${width}%` }}
-                    >
-                      <span className="text-white font-bold">{width.toFixed(0)}%</span>
-                    </div>
-                  </div>
-
-                  {conversionRate && (
-                    <div className="flex items-center justify-center gap-2 mt-2">
-                      <TrendingDown className="w-4 h-4 text-red-400" />
-                      <p className="text-sm text-[#CBC8C9]/70">
-                        Taxa de conversão: <span className="text-[#D4AF37] font-semibold">{conversionRate}%</span>
-                      </p>
-                    </div>
-                  )}
+      <div className="flex-1 flex gap-6 p-6 overflow-hidden">
+        <div className="w-1/2 flex flex-col border-2 border-[#53050B] rounded-lg overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[85%] rounded-lg p-4 ${
+                    message.role === 'user'
+                      ? 'bg-[#53050B] text-white'
+                      : 'bg-black/30 border border-[#3A0A16] text-[#CBC8C9]'
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap leading-relaxed text-sm">{message.content}</p>
                 </div>
-              );
-            })}
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-black/30 border border-[#3A0A16] rounded-lg p-4">
+                  <div className="flex space-x-2">
+                    <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="border-t-2 border-[#53050B] p-4 bg-black">
+            <form onSubmit={handleSendMessage} className="flex gap-3">
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder="Responda aqui..."
+                className="flex-1 bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:outline-none focus:ring-2 focus:ring-[#53050B]"
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !inputMessage.trim()}
+                className="bg-[#53050B] hover:bg-red-800 text-white px-6 py-3 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <Send className="w-5 h-5" />
+              </button>
+            </form>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gradient-to-br from-blue-900/20 to-black border border-blue-700 rounded-lg p-4">
-            <h3 className="text-sm font-semibold mb-2">Taxa Topo → Meio</h3>
-            <p className="text-3xl font-bold text-blue-400">{funnelData.taxa_topo_meio}%</p>
-            <p className="text-xs text-[#CBC8C9]/60 mt-1">De visitantes para interessados</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-purple-900/20 to-black border border-purple-700 rounded-lg p-4">
-            <h3 className="text-sm font-semibold mb-2">Taxa Meio → Fundo</h3>
-            <p className="text-3xl font-bold text-purple-400">{funnelData.taxa_meio_fundo}%</p>
-            <p className="text-xs text-[#CBC8C9]/60 mt-1">De interessados para negociação</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-green-900/20 to-black border border-green-700 rounded-lg p-4">
-            <h3 className="text-sm font-semibold mb-2">Taxa Fundo → Venda</h3>
-            <p className="text-3xl font-bold text-green-400">{funnelData.taxa_fundo_conversao}%</p>
-            <p className="text-xs text-[#CBC8C9]/60 mt-1">De negociação para fechamento</p>
-          </div>
-        </div>
-
-        <div className="mt-6 bg-black/30 border border-[#3A0A16] rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-3 text-[#D4AF37]">Insights da Estrategista</h3>
-          <ul className="space-y-2 text-sm text-[#CBC8C9]/90">
-            <li>• <strong>Topo:</strong> {funnelData.topo < 500 ? 'Aumente tráfego com conteúdo estratégico e anúncios' : 'Tráfego bom! Foque em qualificação'}</li>
-            <li>• <strong>Meio:</strong> {funnelData.taxa_topo_meio < 20 ? 'Taxa baixa. Revise sua oferta e mensagem' : 'Conversão saudável no meio do funil'}</li>
-            <li>• <strong>Fundo:</strong> {funnelData.taxa_fundo_conversao < 25 ? 'GARGALO! Use Exterminador de Objeção para quebrar resistências' : 'Taxa de fechamento boa!'}</li>
-          </ul>
+        <div className="w-1/2 overflow-y-auto">
+          <FunnelVisualizer stages={funnelStages} />
+          
+          {metrics.cpl && metrics.ltv && (
+            <div className="p-4 bg-black/30 border border-[#3A0A16] rounded-lg">
+              <h3 className="text-lg font-semibold mb-3 text-[#D4AF37]">Métricas de Desempenho</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-[#CBC8C9]/70">Custo por Lead (CPL)</p>
+                  <p className="text-2xl font-bold text-white">R$ {metrics.cpl?.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-[#CBC8C9]/70">Lifetime Value (LTV)</p>
+                  <p className="text-2xl font-bold text-green-400">R$ {metrics.ltv?.toLocaleString('pt-BR')}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
