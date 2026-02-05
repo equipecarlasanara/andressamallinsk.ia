@@ -392,6 +392,68 @@ async def chat_with_ai(chat_msg: ChatMessage, user_id: str = Depends(get_current
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro no chat: {str(e)}")
 
+@api_router.post("/ai/analyze-objection")
+async def analyze_objection(request: dict, user_id: str = Depends(get_current_user)):
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"objection_{user_id}_{uuid.uuid4()}",
+            system_message="Você é uma especialista em vendas que analisa objeções e cria scripts de conversão."
+        )
+        chat.with_model("gemini", "gemini-3-flash-preview")
+        
+        prompt = """Analise esta conversa com uma objeção de vendas e forneça:
+
+---
+**Gargalo:**
+[Identifique o principal gargalo ou objeção do prospect]
+
+---
+**Script:**
+[Forneça um script exato, palavra por palavra, para responder e reverter a objeção]
+
+---
+**Missão:**
+[Dê instruções claras sobre como a pessoa deve agir após enviar este script]"""
+        
+        message = UserMessage(text=prompt)
+        response = await chat.send_message(message)
+        return {"analysis": response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao analisar objeção: {str(e)}")
+
+@api_router.post("/ai/analyze-profile")
+async def analyze_profile(request: dict, user_id: str = Depends(get_current_user)):
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"profile_{user_id}_{uuid.uuid4()}",
+            system_message="Você é uma especialista em marketing digital e posicionamento de marca no Instagram."
+        )
+        chat.with_model("gemini", "gemini-3-flash-preview")
+        
+        prompt = """Analise este perfil do Instagram e forneça:
+1. Lista de pontos que precisam ser ajustados
+2. Sugestões específicas de melhoria
+3. Recomendações estratégicas
+
+Seja direta e prática. Liste os pontos numerados."""
+        
+        message = UserMessage(text=prompt)
+        response = await chat.send_message(message)
+        return {"analysisText": response, "imageUrl": f"data:image/jpeg;base64,{request.get('image')}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao analisar perfil: {str(e)}")
+
+@api_router.post("/ai/generate-photoshoot")
+async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_user)):
+    try:
+        # Por enquanto retorna um placeholder, pois geração de imagem requer setup específico
+        # Este endpoint pode ser implementado com Gemini Nano Banana ou outro serviço
+        return {"imageUrl": "https://via.placeholder.com/1024x1024?text=Ensaio+Fotográfico+Gerado"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao gerar ensaio: {str(e)}")
+
 app.include_router(api_router)
 
 app.add_middleware(
