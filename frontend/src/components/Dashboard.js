@@ -7,6 +7,7 @@ import ProfileAnalysis from './ProfileAnalysis';
 import PhotoshootCreator from './PhotoshootCreator';
 import ObjectionExterminator from './ObjectionExterminator';
 import ImageEditor from './ImageEditor';
+import SalesFunnel from './SalesFunnel';
 
 export default function Dashboard({ user, onLogout }) {
   const [activeView, setActiveView] = useState('dashboard');
@@ -39,10 +40,7 @@ export default function Dashboard({ user, onLogout }) {
           <ObjectionExterminator />
         </div>
         <div className={`h-full w-full ${activeView === 'funil' ? 'block' : 'hidden'}`}>
-          <div className="p-6 text-center">
-            <h1 className="text-3xl font-title text-[#CBC8C9] mb-4">Funil de Vendas</h1>
-            <p>Em desenvolvimento...</p>
-          </div>
+          <SalesFunnel />
         </div>
         <div className={`h-full w-full ${activeView === 'editor' ? 'block' : 'hidden'}`}>
           <ImageEditor />
