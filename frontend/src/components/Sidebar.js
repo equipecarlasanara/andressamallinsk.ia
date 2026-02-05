@@ -24,7 +24,6 @@ export default function Sidebar({ activeView, setActiveView, user, onLogout }) {
         <h1 className="font-title text-3xl font-bold" style={{ color: '#D4AF37' }} data-testid="sidebar-title">
           ESTRATEGISTA
         </h1>
-        <h2 className="text-sm tracking-widest mt-1" style={{ color: '#D4AF37' }}>by Andressa Mallinsk</h2>
         {user && (
           <p className="text-xs text-[#CBC8C9]/50 mt-2" data-testid="user-name">{user.name}</p>
         )}
