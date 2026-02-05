@@ -439,69 +439,69 @@ async def chat_with_ai(chat_msg: ChatMessage, user_id: str = Depends(get_current
 @api_router.post("/ai/analyze-objection")
 async def analyze_objection(request: dict, user_id: str = Depends(get_current_user)):
     try:
+        image_base64 = request.get('image', '')
+        
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"objection_{user_id}_{uuid.uuid4()}",
-            system_message="Você é A Estrategista, especialista em vendas que segue a metodologia de Andressa Mallinsk. Você analisa conversas de vendas e cria scripts persuasivos focados em resultados."
+            system_message=ESTRATEGISTA_SYSTEM_INSTRUCTION
         )
         chat.with_model("gemini", "gemini-3-flash-preview")
         
-        prompt = """Analise esta conversa de vendas e identifique a objeção do prospect. Siga a metodologia de Andressa Mallinsk:
+        prompt = """Analise o print desta conversa de vendas. RESPONDA em 3 blocos curtos:
 
-1. Identifique o GARGALO principal - qual é a verdadeira objeção? (Não é sempre o que a pessoa diz)
-2. Crie um SCRIPT EXATO palavra por palavra que:
-   - Valide a objeção sem concordar com ela
-   - Traga autoridade e casos de sucesso
-   - Reposicione o valor da oferta
-   - Conduza para o fechamento
-3. Defina a MISSÃO - o que fazer após enviar este script
+**Gargalo:**
+Identifique a objeção REAL (não superficial). É falta de dinheiro, medo, falta de urgência ou objeção de valor?
 
-Responda EXATAMENTE neste formato:
+**Script:**
+Crie mensagem exata, palavra por palavra, pronta para copiar. Seja direta e empática. Conduza para ação.
 
-O Gargalo:
-[Análise profunda da objeção real - não superficial. O que REALMENTE está impedindo a venda? É falta de dinheiro, medo, falta de urgência, ou objeção de valor?]
-
-Script Exato (Copie e Cole):
-[Script palavra por palavra, pronto para copiar e colar. Deve ser direto, empático e conduzir para ação. Use tom de autoridade mas sem ser arrogante.]
-
-Missão:
-[Instrução clara do próximo passo após enviar o script - aguardar X horas, fazer follow-up, etc.]"""
+**Missão:**
+Instrução clara: o que fazer após enviar este script (ex: aguardar 24h, fazer follow-up, etc)."""
         
-        message = UserMessage(text=prompt)
+        # Enviar imagem + prompt
+        message = UserMessage(
+            text=prompt,
+            file_contents=[ImageContent(image_base64)]
+        )
+        
         response = await chat.send_message(message)
         
-        # Parsear a resposta
+        # Parsear resposta
         lines = response.strip().split('\n')
-        gargalo_section = []
-        script_section = []
-        missao_section = []
+        gargalo_lines = []
+        script_lines = []
+        missao_lines = []
         current_section = None
         
         for line in lines:
-            if 'gargalo' in line.lower() and ':' in line:
+            line_lower = line.lower()
+            if 'gargalo' in line_lower and ':' in line:
                 current_section = 'gargalo'
                 continue
-            elif 'script' in line.lower() and ':' in line:
+            elif 'script' in line_lower and ':' in line:
                 current_section = 'script'
                 continue
-            elif 'miss' in line.lower() and ':' in line:
+            elif 'miss' in line_lower and ':' in line:
                 current_section = 'missao'
                 continue
             
-            if current_section == 'gargalo' and line.strip():
-                gargalo_section.append(line.strip())
-            elif current_section == 'script' and line.strip():
-                script_section.append(line.strip())
-            elif current_section == 'missao' and line.strip():
-                missao_section.append(line.strip())
+            if line.strip():
+                if current_section == 'gargalo':
+                    gargalo_lines.append(line.strip())
+                elif current_section == 'script':
+                    script_lines.append(line.strip())
+                elif current_section == 'missao':
+                    missao_lines.append(line.strip())
         
         return {
-            "gargalo": '\n'.join(gargalo_section) if gargalo_section else "Análise em processamento...",
-            "script": '\n'.join(script_section) if script_section else "Script em criação...",
-            "missao": '\n'.join(missao_section) if missao_section else "Missão sendo definida..."
+            "gargalo": '\n'.join(gargalo_lines) if gargalo_lines else "Analisando conversa...",
+            "script": '\n'.join(script_lines) if script_lines else "Criando script...",
+            "missao": '\n'.join(missao_lines) if missao_lines else "Definindo próximos passos..."
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao analisar objeção: {str(e)}")
+        logger.error(f"Erro na análise de objeção: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao analisar: {str(e)}")
 
 @api_router.post("/ai/analyze-profile")
 async def analyze_profile(request: dict, user_id: str = Depends(get_current_user)):
