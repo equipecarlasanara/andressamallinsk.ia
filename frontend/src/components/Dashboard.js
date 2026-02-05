@@ -39,8 +39,8 @@ export default function Dashboard({ user, onLogout }) {
           <ObjectionExterminator />
         </div>
         <div className={`h-full w-full ${activeView === 'funil' ? 'block' : 'hidden'}`}>
-          <div className=\"p-6 text-center\">
-            <h1 className=\"text-3xl font-title text-[#CBC8C9] mb-4\">Funil de Vendas</h1>
+          <div className="p-6 text-center">
+            <h1 className="text-3xl font-title text-[#CBC8C9] mb-4">Funil de Vendas</h1>
             <p>Em desenvolvimento...</p>
           </div>
         </div>
