@@ -330,6 +330,44 @@ async def delete_action(action_id: str, user_id: str = Depends(get_current_user)
         raise HTTPException(status_code=404, detail="Ação não encontrada")
     return {"success": True}
 
+@api_router.post("/leads", response_model=Lead)
+async def create_lead(lead_data: LeadCreate, user_id: str = Depends(get_current_user)):
+    lead = Lead(**lead_data.model_dump(), user_id=user_id)
+    lead_dict = lead.model_dump()
+    lead_dict['created_at'] = lead_dict['created_at'].isoformat()
+    lead_dict['updated_at'] = lead_dict['updated_at'].isoformat()
+    await db.leads.insert_one(lead_dict)
+    return lead
+
+@api_router.get("/leads", response_model=List[Lead])
+async def get_leads(user_id: str = Depends(get_current_user)):
+    leads = await db.leads.find({"user_id": user_id}, {"_id": 0}).to_list(100)
+    for lead in leads:
+        if isinstance(lead['created_at'], str):
+            lead['created_at'] = datetime.fromisoformat(lead['created_at'])
+        if isinstance(lead['updated_at'], str):
+            lead['updated_at'] = datetime.fromisoformat(lead['updated_at'])
+    return [Lead(**l) for l in leads]
+
+@api_router.patch("/leads/{lead_id}", response_model=Lead)
+async def update_lead(lead_id: str, lead_update: LeadUpdate, user_id: str = Depends(get_current_user)):
+    update_data = {k: v for k, v in lead_update.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Nenhum dado para atualizar")
+    
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    result = await db.leads.update_one({"id": lead_id, "user_id": user_id}, {"$set": update_data})
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Lead não encontrado")
+    
+    lead_doc = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if isinstance(lead_doc['created_at'], str):
+        lead_doc['created_at'] = datetime.fromisoformat(lead_doc['created_at'])
+    if isinstance(lead_doc['updated_at'], str):
+        lead_doc['updated_at'] = datetime.fromisoformat(lead_doc['updated_at'])
+    return Lead(**lead_doc)
+
 @api_router.post("/content", response_model=ContentItem)
 async def create_content(content_data: ContentItemCreate, user_id: str = Depends(get_current_user)):
     content = ContentItem(**content_data.model_dump(), user_id=user_id)
