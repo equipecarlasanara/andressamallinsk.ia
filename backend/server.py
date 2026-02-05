@@ -347,20 +347,56 @@ async def create_lead(lead_data: LeadCreate, user_id: str = Depends(get_current_
     
     return lead
 
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
+from googleapiclient.discovery import build
+import json
+
+GOOGLE_CALENDAR_SCOPES = ['https://www.googleapis.com/auth/calendar.events']
+
+@api_router.get("/auth/google/url")
+async def get_google_auth_url():
+    """Retorna URL para OAuth do Google Calendar"""
+    # Requer credentials.json com Client ID/Secret do Google Cloud Console
+    # Usuário precisa criar projeto em: https://console.cloud.google.com
+    return {
+        "auth_url": "https://console.cloud.google.com/apis/credentials",
+        "instructions": "Para integrar Google Calendar: 1) Crie projeto no Google Cloud Console, 2) Ative Google Calendar API, 3) Crie credenciais OAuth 2.0, 4) Adicione redirect_uri, 5) Forneça Client ID e Secret"
+    }
+
 async def create_calendar_reminder(user_id: str, lead_name: str, followup_date: str):
-    """Cria lembrete no Google Calendar para follow-up"""
+    """Cria lembrete no Google Calendar"""
     try:
-        # Por enquanto só registra no log - OAuth do Google Calendar requer setup adicional
-        logger.info(f"Lembrete criado: Follow-up com {lead_name} em {followup_date}")
-        # TODO: Implementar OAuth e criação real de evento no Google Calendar
-        # event = {
-        #     'summary': f'Follow-up: {lead_name}',
-        #     'description': f'Lembrete para entrar em contato com o lead {lead_name}',
-        #     'start': {'dateTime': followup_date, 'timeZone': 'America/Sao_Paulo'},
-        #     'reminders': {'useDefault': False, 'overrides': [{'method': 'popup', 'minutes': 30}]}
-        # }
+        # Verificar se usuário tem token do Google
+        user_doc = await db.users.find_one({"id": user_id}, {"_id": 0})
+        google_token = user_doc.get('google_calendar_token')
+        
+        if not google_token:
+            logger.info(f"Usuário {user_id} não tem Google Calendar conectado")
+            return
+        
+        # Criar evento
+        creds = Credentials.from_authorized_user_info(json.loads(google_token))
+        service = build('calendar', 'v3', credentials=creds)
+        
+        event = {
+            'summary': f'Follow-up: {lead_name}',
+            'description': f'Lembrete para entrar em contato com {lead_name}',
+            'start': {'dateTime': f'{followup_date}T10:00:00', 'timeZone': 'America/Sao_Paulo'},
+            'end': {'dateTime': f'{followup_date}T11:00:00', 'timeZone': 'America/Sao_Paulo'},
+            'reminders': {
+                'useDefault': False,
+                'overrides': [
+                    {'method': 'popup', 'minutes': 30},
+                    {'method': 'email', 'minutes': 60}
+                ]
+            }
+        }
+        
+        service.events().insert(calendarId='primary', body=event).execute()
+        logger.info(f"Lembrete criado no Google Calendar: {lead_name} em {followup_date}")
     except Exception as e:
-        logger.error(f"Erro ao criar lembrete: {str(e)}")
+        logger.error(f"Erro ao criar lembrete no Calendar: {str(e)}")
 
 @api_router.get("/leads", response_model=List[Lead])
 async def get_leads(user_id: str = Depends(get_current_user)):
