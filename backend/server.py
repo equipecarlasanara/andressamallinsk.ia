@@ -109,6 +109,32 @@ class WeeklyActionUpdate(BaseModel):
     description: Optional[str] = None
     completed: Optional[bool] = None
 
+class Lead(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    name: str
+    phone: str
+    stage: str = "novo"
+    notes: Optional[str] = None
+    followup_date: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class LeadCreate(BaseModel):
+    name: str
+    phone: str
+    stage: str = "novo"
+    notes: Optional[str] = None
+    followup_date: Optional[str] = None
+
+class LeadUpdate(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    stage: Optional[str] = None
+    notes: Optional[str] = None
+    followup_date: Optional[str] = None
+
 class ContentItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
