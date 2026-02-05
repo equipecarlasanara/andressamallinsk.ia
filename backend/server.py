@@ -389,7 +389,32 @@ async def update_lead(lead_id: str, lead_update: LeadUpdate, user_id: str = Depe
         lead_doc['created_at'] = datetime.fromisoformat(lead_doc['created_at'])
     if isinstance(lead_doc['updated_at'], str):
         lead_doc['updated_at'] = datetime.fromisoformat(lead_doc['updated_at'])
+    
+    # Criar lembrete se mudou a data de follow-up
+    if lead_update.followup_date:
+        try:
+            await create_calendar_reminder(user_id, lead_doc['name'], lead_update.followup_date)
+        except Exception as e:
+            logger.warning(f"Erro ao criar lembrete: {str(e)}")
+    
     return Lead(**lead_doc)
+
+@api_router.post("/calendar/sync")
+async def sync_calendar(user_id: str = Depends(get_current_user)):
+    """
+    Sincroniza leads com Google Calendar
+    Requer OAuth configurado (placeholder por enquanto)
+    """
+    try:
+        leads = await db.leads.find({"user_id": user_id, "followup_date": {"$ne": None}}, {"_id": 0}).to_list(100)
+        synced = 0
+        for lead in leads:
+            if lead.get('followup_date'):
+                await create_calendar_reminder(user_id, lead['name'], lead['followup_date'])
+                synced += 1
+        return {"success": True, "synced": synced, "message": f"{synced} lembretes criados"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao sincronizar: {str(e)}")
 
 @api_router.post("/content", response_model=ContentItem)
 async def create_content(content_data: ContentItemCreate, user_id: str = Depends(get_current_user)):
