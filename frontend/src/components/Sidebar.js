@@ -1,4 +1,4 @@
-import { Target, BookOpen, Brain, LogOut, User, Camera, Shield } from 'lucide-react';
+import { Target, BookOpen, Brain, LogOut, User, Camera, Shield, Edit3, TrendingUp } from 'lucide-react';
 
 export default function Sidebar({ activeView, setActiveView, user, onLogout }) {
   const navItems = [
@@ -8,6 +8,8 @@ export default function Sidebar({ activeView, setActiveView, user, onLogout }) {
     { id: 'ensaio', label: 'Criar Ensaio Fotográfico', icon: Camera },
     { id: 'biblioteca', label: 'Biblioteca de Conteúdo', icon: BookOpen },
     { id: 'objecao', label: 'Exterminador de Objeção', icon: Shield },
+    { id: 'funil', label: 'Funil de Vendas', icon: TrendingUp },
+    { id: 'editor', label: 'Editor Nano Banana', icon: Edit3 },
   ];
 
   return (
