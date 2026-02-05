@@ -454,6 +454,17 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao gerar ensaio: {str(e)}")
 
+@api_router.post("/ai/edit-image")
+async def edit_image(request: dict, user_id: str = Depends(get_current_user)):
+    try:
+        # Placeholder para edição de imagem com Nano Banana
+        # Retorna a imagem original como demonstração
+        image_data = request.get('image', {})
+        base64_img = image_data.get('base64', '')
+        return {"imageUrl": f"data:image/jpeg;base64,{base64_img}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao editar imagem: {str(e)}")
+
 app.include_router(api_router)
 
 app.add_middleware(
