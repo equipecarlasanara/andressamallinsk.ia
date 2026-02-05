@@ -560,10 +560,36 @@ Responda APENAS com uma lista numerada, sem introdu\u00e7\u00e3o ou conclus\u00e
 @api_router.post("/ai/generate-photoshoot")
 async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_user)):
     try:
-        # Por enquanto retorna um placeholder, pois geração de imagem requer setup específico
-        # Este endpoint pode ser implementado com Gemini Nano Banana ou outro serviço
-        return {"imageUrl": "https://via.placeholder.com/1024x1024?text=Ensaio+Fotográfico+Gerado"}
+        prompt = request.get('prompt', '')
+        base_image = request.get('baseImage')
+        
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"photoshoot_{user_id}_{uuid.uuid4()}",
+            system_message="Você é especialista em fotografia profissional e direção de arte."
+        )
+        chat.with_model("gemini", "gemini-3-pro-image-preview").with_params(modalities=["image", "text"])
+        
+        # Se tem imagem base, usa para editar
+        if base_image and base_image.get('base64'):
+            message = UserMessage(
+                text=f"Crie um ensaio fotográfico profissional: {prompt}",
+                file_contents=[ImageContent(base_image['base64'])]
+            )
+        else:
+            message = UserMessage(text=f"Crie um ensaio fotográfico profissional: {prompt}")
+        
+        text_response, images = await chat.send_message_multimodal_response(message)
+        
+        if images and len(images) > 0:
+            # Retorna primeira imagem gerada
+            image_data = images[0]['data']
+            return {"imageUrl": f"data:{images[0]['mime_type']};base64,{image_data}"}
+        else:
+            raise HTTPException(status_code=500, detail="Nenhuma imagem foi gerada")
+            
     except Exception as e:
+        logger.error(f"Erro ao gerar ensaio: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao gerar ensaio: {str(e)}")
 
 @api_router.post("/ai/edit-image")
