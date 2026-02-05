@@ -330,7 +330,16 @@ export default function GoalsDashboard() {
           <h2 className="text-xl font-title text-[#CBC8C9] mb-4">CRM - Kanban de Leads</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {KANBAN_STAGES.map((stage) => (
-              <div key={stage.id} className={`${stage.color} border-2 rounded-lg p-3`}>
+              <div
+                key={stage.id}
+                className={`${stage.color} border-2 rounded-lg p-3`}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const leadId = e.dataTransfer.getData('leadId');
+                  if (leadId) handleUpdateLeadStage(leadId, stage.id);
+                }}
+              >
                 <h3 className="text-sm font-semibold mb-3 text-center">{stage.label}</h3>
                 <div className="space-y-2 min-h-[200px]">
                   {leads.filter(l => l.stage === stage.id).map((lead) => (
@@ -338,13 +347,7 @@ export default function GoalsDashboard() {
                       key={lead.id}
                       draggable
                       onDragStart={(e) => e.dataTransfer.setData('leadId', lead.id)}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const leadId = e.dataTransfer.getData('leadId');
-                        if (leadId) handleUpdateLeadStage(leadId, stage.id);
-                      }}
-                      className="bg-[#19161B] border border-[#3A0A16] rounded p-2 cursor-move hover:border-[#53050B]"
+                      className="bg-[#19161B] border border-[#3A0A16] rounded p-2 cursor-move hover:border-[#53050B] transition-colors"
                     >
                       <p className="text-sm font-semibold text-[#CBC8C9]">{lead.name}</p>
                       <p className="text-xs text-[#CBC8C9]/60">{lead.phone}</p>
