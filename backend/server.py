@@ -416,6 +416,32 @@ async def sync_calendar(user_id: str = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao sincronizar: {str(e)}")
 
+@api_router.get("/funnel/stats")
+async def get_funnel_stats(user_id: str = Depends(get_current_user)):
+    """Calcula estatísticas do funil de vendas baseado nos leads"""
+    try:
+        all_leads = await db.leads.find({"user_id": user_id}, {"_id": 0}).to_list(1000)
+        
+        # Contar por estágio
+        topo = len([l for l in all_leads if l.get('stage') == 'novo'])
+        meio = len([l for l in all_leads if l.get('stage') == 'contato'])
+        fundo = len([l for l in all_leads if l.get('stage') == 'negociacao'])
+        conversao = len([l for l in all_leads if l.get('stage') == 'fechado'])
+        
+        total = len(all_leads) or 1
+        
+        return {
+            "topo": topo,
+            "meio": meio,
+            "fundo": fundo,
+            "conversao": conversao,
+            "taxa_topo_meio": round((meio / total) * 100, 1) if total > 0 else 0,
+            "taxa_meio_fundo": round((fundo / meio) * 100, 1) if meio > 0 else 0,
+            "taxa_fundo_conversao": round((conversao / fundo) * 100, 1) if fundo > 0 else 0
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao calcular funil: {str(e)}")
+
 @api_router.post("/content", response_model=ContentItem)
 async def create_content(content_data: ContentItemCreate, user_id: str = Depends(get_current_user)):
     content = ContentItem(**content_data.model_dump(), user_id=user_id)
