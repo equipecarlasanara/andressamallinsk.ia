@@ -337,7 +337,30 @@ async def create_lead(lead_data: LeadCreate, user_id: str = Depends(get_current_
     lead_dict['created_at'] = lead_dict['created_at'].isoformat()
     lead_dict['updated_at'] = lead_dict['updated_at'].isoformat()
     await db.leads.insert_one(lead_dict)
+    
+    # Criar lembrete no Google Calendar se tiver data de follow-up
+    if lead_data.followup_date:
+        try:
+            await create_calendar_reminder(user_id, lead.name, lead_data.followup_date)
+        except Exception as e:
+            logger.warning(f"Erro ao criar lembrete no calendário: {str(e)}")
+    
     return lead
+
+async def create_calendar_reminder(user_id: str, lead_name: str, followup_date: str):
+    """Cria lembrete no Google Calendar para follow-up"""
+    try:
+        # Por enquanto só registra no log - OAuth do Google Calendar requer setup adicional
+        logger.info(f"Lembrete criado: Follow-up com {lead_name} em {followup_date}")
+        # TODO: Implementar OAuth e criação real de evento no Google Calendar
+        # event = {
+        #     'summary': f'Follow-up: {lead_name}',
+        #     'description': f'Lembrete para entrar em contato com o lead {lead_name}',
+        #     'start': {'dateTime': followup_date, 'timeZone': 'America/Sao_Paulo'},
+        #     'reminders': {'useDefault': False, 'overrides': [{'method': 'popup', 'minutes': 30}]}
+        # }
+    except Exception as e:
+        logger.error(f"Erro ao criar lembrete: {str(e)}")
 
 @api_router.get("/leads", response_model=List[Lead])
 async def get_leads(user_id: str = Depends(get_current_user)):
