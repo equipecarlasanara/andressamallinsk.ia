@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import GoalsDashboard from './GoalsDashboard';
 import ContentLibrary from './ContentLibrary';
 import EstrategistaDigital from './EstrategistaDigital';
+import ProfileAnalysis from './ProfileAnalysis';
+import PhotoshootCreator from './PhotoshootCreator';
+import ObjectionExterminator from './ObjectionExterminator';
 
 export default function Dashboard({ user, onLogout }) {
   const [activeView, setActiveView] = useState('dashboard');
@@ -20,11 +22,20 @@ export default function Dashboard({ user, onLogout }) {
         <div className={`h-full w-full ${activeView === 'dashboard' ? 'block' : 'hidden'}`}>
           <GoalsDashboard />
         </div>
+        <div className={`h-full w-full ${activeView === 'estrategista' ? 'block' : 'hidden'}`}>
+          <EstrategistaDigital />
+        </div>
+        <div className={`h-full w-full ${activeView === 'analise' ? 'block' : 'hidden'}`}>
+          <ProfileAnalysis />
+        </div>
+        <div className={`h-full w-full ${activeView === 'ensaio' ? 'block' : 'hidden'}`}>
+          <PhotoshootCreator />
+        </div>
         <div className={`h-full w-full ${activeView === 'biblioteca' ? 'block' : 'hidden'}`}>
           <ContentLibrary />
         </div>
-        <div className={`h-full w-full ${activeView === 'estrategista' ? 'block' : 'hidden'}`}>
-          <EstrategistaDigital />
+        <div className={`h-full w-full ${activeView === 'objecao' ? 'block' : 'hidden'}`}>
+          <ObjectionExterminator />
         </div>
       </main>
     </div>
