@@ -1,10 +1,13 @@
-import { Target, BookOpen, Brain, LogOut } from 'lucide-react';
+import { Target, BookOpen, Brain, LogOut, User, Camera, Shield } from 'lucide-react';
 
 export default function Sidebar({ activeView, setActiveView, user, onLogout }) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard de Metas', icon: Target },
-    { id: 'biblioteca', label: 'Biblioteca de Conteúdo', icon: BookOpen },
     { id: 'estrategista', label: 'Estrategista Digital', icon: Brain },
+    { id: 'analise', label: 'Análise de Perfil', icon: User },
+    { id: 'ensaio', label: 'Criar Ensaio Fotográfico', icon: Camera },
+    { id: 'biblioteca', label: 'Biblioteca de Conteúdo', icon: BookOpen },
+    { id: 'objecao', label: 'Exterminador de Objeção', icon: Shield },
   ];
 
   return (
@@ -19,7 +22,7 @@ export default function Sidebar({ activeView, setActiveView, user, onLogout }) {
         <h1 className="font-title text-3xl font-bold" style={{ color: '#D4AF37' }} data-testid="sidebar-title">
           ESTRATEGISTA
         </h1>
-        <h2 className="text-sm text-[#CBC8C9]/70 tracking-widest mt-1">A ESTRATEGISTA</h2>
+        <h2 className="text-sm tracking-widest mt-1" style={{ color: '#D4AF37' }}>by Andressa Mallinsk</h2>
         {user && (
           <p className="text-xs text-[#CBC8C9]/50 mt-2" data-testid="user-name">{user.name}</p>
         )}
