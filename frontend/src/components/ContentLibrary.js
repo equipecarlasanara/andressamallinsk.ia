@@ -173,12 +173,12 @@ export default function ContentLibrary() {
 
       <div className="flex-1 flex gap-6 px-6 pb-6 overflow-hidden">
         <div className="w-1/2 flex flex-col border-2 border-[#53050B] rounded-lg overflow-hidden" data-testid="themes-panel">
-          <div className="flex border-b-2 border-[#53050B] bg-black">
+          <div className="flex flex-wrap border-b-2 border-[#53050B] bg-black">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 p-3 text-sm font-semibold transition-colors ${
+                className={`flex-1 min-w-[100px] p-3 text-xs font-semibold transition-colors ${
                   activeTab === tab.key
                     ? 'bg-[#53050B] text-white'
                     : 'text-[#CBC8C9]/70 hover:bg-[#3A0A16]/30'
