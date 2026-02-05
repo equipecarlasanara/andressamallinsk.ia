@@ -442,6 +442,46 @@ async def get_funnel_stats(user_id: str = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao calcular funil: {str(e)}")
 
+@api_router.post("/ai/build-funnel")
+async def build_funnel(chat_msg: ChatMessage, user_id: str = Depends(get_current_user)):
+    try:
+        session_id = chat_msg.session_id or f"funnel_{user_id}"
+        
+        funnel_instruction = """Você é a "Estrategista", especialista em funis de venda. Construa um funil interativamente:
+
+1. Faça UMA pergunta por vez: produto/serviço, cliente ideal, preço, meta, canais
+2. Após coletar, apresente funil com etapas (Ex: Atração, Qualificação, Oferta, Fechamento)
+3. Para cada etapa inclua:
+   - Ações práticas
+   - Leads: [número]
+   - Conversão: [%]
+   - (Lembrete follow-up em Xh)
+
+Formato:
+### 1. Atração
+- **Ações:** Conteúdo Instagram, anúncios
+- **Leads:** 1000
+- **Conversão:** 10%
+- (Lembrete follow-up em 24h)
+
+Ao final, adicione:
+## Métricas de Desempenho
+Custo por Lead (CPL): R$ XX,XX
+Lifetime Value (LTV): R$ YYYY,YY"""
+        
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=session_id,
+            system_message=funnel_instruction
+        )
+        chat.with_model("gemini", "gemini-3-flash-preview")
+        
+        message = UserMessage(text=chat_msg.message)
+        response = await chat.send_message(message)
+        return {"response": response, "session_id": session_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro: {str(e)}")
+
 @api_router.post("/content", response_model=ContentItem)
 async def create_content(content_data: ContentItemCreate, user_id: str = Depends(get_current_user)):
     content = ContentItem(**content_data.model_dump(), user_id=user_id)
