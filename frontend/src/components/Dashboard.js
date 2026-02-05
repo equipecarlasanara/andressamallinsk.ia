@@ -6,6 +6,7 @@ import EstrategistaDigital from './EstrategistaDigital';
 import ProfileAnalysis from './ProfileAnalysis';
 import PhotoshootCreator from './PhotoshootCreator';
 import ObjectionExterminator from './ObjectionExterminator';
+import ImageEditor from './ImageEditor';
 
 export default function Dashboard({ user, onLogout }) {
   const [activeView, setActiveView] = useState('dashboard');
@@ -36,6 +37,15 @@ export default function Dashboard({ user, onLogout }) {
         </div>
         <div className={`h-full w-full ${activeView === 'objecao' ? 'block' : 'hidden'}`}>
           <ObjectionExterminator />
+        </div>
+        <div className={`h-full w-full ${activeView === 'funil' ? 'block' : 'hidden'}`}>
+          <div className=\"p-6 text-center\">
+            <h1 className=\"text-3xl font-title text-[#CBC8C9] mb-4\">Funil de Vendas</h1>
+            <p>Em desenvolvimento...</p>
+          </div>
+        </div>
+        <div className={`h-full w-full ${activeView === 'editor' ? 'block' : 'hidden'}`}>
+          <ImageEditor />
         </div>
       </main>
     </div>
