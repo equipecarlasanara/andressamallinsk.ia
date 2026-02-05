@@ -51,7 +51,7 @@ export default function ImageEditor() {
       setEditedImageUrl(response.data.imageUrl);
     } catch (err) {
       console.error('Erro ao editar imagem:', err);
-      setError('Não foi possível editar a imagem. Tente um prompt diferente ou tente novamente mais tarde.');
+      setError('Não foi possível editar a imagem. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -67,7 +67,7 @@ export default function ImageEditor() {
   };
 
   return (
-    <div className="p-6 h-full flex flex-col" data-testid="image-editor">
+    <div className="p-6 h-full flex flex-col bg-[#19161B]" data-testid="image-editor">
       <h1 className="text-3xl font-title text-[#CBC8C9] mb-4 border-b border-[#3A0A16] pb-2">
         Editor Nano Banana
       </h1>
@@ -105,19 +105,19 @@ export default function ImageEditor() {
 
       {originalImage && !isLoading && (
         <div className="flex-grow flex flex-col overflow-hidden">
-          <div className="flex items-center gap-4 mb-4">
-            <textarea
+          <div className="bg-black border-2 border-[#53050B] rounded-lg p-4 mb-4 flex items-center gap-4">
+            <input
+              type="text"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Ex: cacheie meu cabelo e me coloque sentada"
-              className="w-full bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:outline-none focus:ring-2 focus:ring-[#53050B] resize-none"
-              rows={2}
+              placeholder="cacheie meu cabelo e me coloque sentada"
+              className="flex-1 bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:outline-none focus:ring-2 focus:ring-[#53050B]"
               disabled={isLoading}
             />
             <button
               onClick={handleEdit}
               disabled={isLoading || !prompt.trim()}
-              className="px-6 py-3 bg-[#53050B] text-white rounded-lg font-semibold hover:bg-red-800 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+              className="px-8 py-3 bg-[#53050B] text-white rounded-lg font-semibold hover:bg-red-800 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
             >
               Editar
             </button>
@@ -125,42 +125,44 @@ export default function ImageEditor() {
 
           {error && <p className="text-red-400 text-center mb-4">{error}</p>}
 
-          <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-6 overflow-auto p-1">
-            <div className="flex flex-col items-center">
-              <h2 className="text-2xl font-title text-center mb-2">Original</h2>
+          <div className="flex-grow grid grid-cols-2 gap-6 overflow-hidden">
+            <div className="flex flex-col items-center justify-center">
+              <h2 className="text-2xl font-title text-center mb-4">Original</h2>
               <img
                 src={originalImage.preview}
                 alt="Original"
-                className="w-full max-w-md object-contain rounded-lg border border-[#3A0A16]"
+                className="w-full h-auto max-h-[500px] object-contain rounded-lg"
               />
             </div>
-            <div className="flex flex-col items-center">
-              <h2 className="text-2xl font-title text-center mb-2">Editada</h2>
-              <div className="relative group w-full max-w-md aspect-square flex items-center justify-center bg-black/20 border border-[#53050B] rounded-lg">
+            <div className="flex flex-col items-center justify-center">
+              <h2 className="text-2xl font-title text-center mb-4">Editada</h2>
+              <div className="relative w-full h-auto max-h-[500px] flex items-center justify-center">
                 {editedImageUrl ? (
                   <>
                     <img
                       src={editedImageUrl}
                       alt="Editada"
-                      className="max-w-full max-h-full object-contain rounded-lg"
+                      className="w-full h-auto max-h-[500px] object-contain rounded-lg"
                     />
                     <button
                       onClick={() => handleDownload(editedImageUrl, 'imagem-editada.png')}
-                      className="absolute top-2 right-2 bg-black/60 text-white p-2 rounded-full hover:bg-[#53050B] transition-opacity opacity-0 group-hover:opacity-100"
+                      className="absolute top-2 right-2 bg-black/60 text-white p-2 rounded-full hover:bg-[#53050B] transition-opacity"
                       aria-label="Baixar Imagem"
                     >
                       <Download className="w-5 h-5" />
                     </button>
                   </>
                 ) : (
-                  <p className="text-[#CBC8C9]/60 p-4 text-center">Sua imagem editada aparecerá aqui.</p>
+                  <div className="w-full h-[500px] bg-black/20 border-2 border-[#53050B] rounded-lg flex items-center justify-center">
+                    <p className="text-[#CBC8C9]/60 p-4 text-center">Sua imagem editada aparecerá aqui.</p>
+                  </div>
                 )}
               </div>
             </div>
           </div>
           <button
             onClick={() => setOriginalImage(null)}
-            className="mt-4 mx-auto px-6 py-2 bg-[#19161B] border border-[#3A0A16] text-white rounded-lg font-semibold hover:bg-[#3A0A16]"
+            className="mt-6 mx-auto px-6 py-3 bg-[#19161B] border-2 border-[#53050B] text-white rounded-lg font-semibold hover:bg-[#3A0A16]"
           >
             Enviar Outra Imagem
           </button>

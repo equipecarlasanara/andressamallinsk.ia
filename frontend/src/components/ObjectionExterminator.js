@@ -44,19 +44,10 @@ export default function ObjectionExterminator() {
           getAuthHeaders()
         );
 
-        const result = response.data.analysis;
-        const parts = result.split('---');
-        if (parts.length >= 3) {
-          const gargaloText = parts[0].replace(/\*\*Gargalo:\*\*\s*/i, '').trim();
-          const scriptText = parts[1].replace(/\*\*Script:\*\*\s*/i, '').trim();
-          const missionText = parts[2].replace(/\*\*Missão:\*\*\s*/i, '').trim();
-
-          setGargalo(gargaloText);
-          setScript(scriptText);
-          setMission(missionText);
-        } else {
-          setError('A resposta da IA não veio no formato esperado. Tente novamente.');
-        }
+        const data = response.data;
+        setGargalo(data.gargalo || '');
+        setScript(data.script || '');
+        setMission(data.missao || '');
       } catch (err) {
         console.error('Erro ao analisar objeção:', err);
         setError('Não foi possível analisar a imagem. Tente novamente.');
@@ -78,7 +69,7 @@ export default function ObjectionExterminator() {
   };
 
   return (
-    <div className="p-6 h-full flex flex-col" data-testid="objection-exterminator">
+    <div className="p-6 h-full flex flex-col bg-[#19161B]" data-testid="objection-exterminator">
       <h1 className="text-3xl font-title text-[#CBC8C9] mb-4 border-b border-[#3A0A16] pb-2">
         Exterminador de Objeção
       </h1>
@@ -133,25 +124,27 @@ export default function ObjectionExterminator() {
 
           {gargalo && !isLoading && (
             <>
-              <h2 className="text-xl font-title text-[#CBC8C9] mb-2">O Gargalo</h2>
+              <h2 className="text-xl font-title text-[#CBC8C9] mb-3">O Gargalo</h2>
               <div className="bg-[#19161B] p-4 rounded-lg mb-6">
-                <p className="text-[#CBC8C9]/90">{gargalo}</p>
+                <p className="text-[#CBC8C9]/90 leading-relaxed">{gargalo}</p>
               </div>
-              <h2 className="text-xl font-title text-[#CBC8C9] mb-2">Script Exato (Copie e Cole)</h2>
+              
+              <h2 className="text-xl font-title text-[#CBC8C9] mb-3">Script Exato (Copie e Cole)</h2>
               <div className="bg-[#19161B] p-4 rounded-lg mb-6 relative group">
-                <p className="text-[#CBC8C9]/90 whitespace-pre-wrap">{script}</p>
+                <p className="text-[#CBC8C9]/90 whitespace-pre-wrap leading-relaxed">{script}</p>
                 <button
                   onClick={() => navigator.clipboard.writeText(script)}
-                  className="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                  className="absolute top-2 right-2 bg-black/50 text-white px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-xs"
                 >
                   Copiar
                 </button>
               </div>
+              
               {mission && (
                 <>
-                  <h2 className="text-xl font-title text-[#D4AF37] mb-2">Sua Missão</h2>
+                  <h2 className="text-xl font-title text-[#D4AF37] mb-3">Sua Missão</h2>
                   <div className="bg-[#19161B] border border-[#D4AF37]/30 p-4 rounded-lg">
-                    <p className="text-white whitespace-pre-wrap">{mission}</p>
+                    <p className="text-white whitespace-pre-wrap leading-relaxed">{mission}</p>
                   </div>
                 </>
               )}

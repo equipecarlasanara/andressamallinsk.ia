@@ -12,7 +12,7 @@ const getAuthHeaders = () => ({
 export default function ProfileAnalysis() {
   const [beforeImage, setBeforeImage] = useState(null);
   const [afterImage, setAfterImage] = useState(null);
-  const [analysisText, setAnalysisText] = useState('');
+  const [analysisPoints, setAnalysisPoints] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
@@ -24,7 +24,7 @@ export default function ProfileAnalysis() {
     setIsLoading(true);
     setError(null);
     setAfterImage(null);
-    setAnalysisText('');
+    setAnalysisPoints([]);
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -39,7 +39,7 @@ export default function ProfileAnalysis() {
           getAuthHeaders()
         );
         setAfterImage(response.data.imageUrl);
-        setAnalysisText(response.data.analysisText);
+        setAnalysisPoints(response.data.analysisPoints || []);
       } catch (err) {
         console.error('Erro na análise de perfil:', err);
         setError('Ocorreu um erro ao realizar a análise visual. Tente novamente.');
@@ -59,7 +59,7 @@ export default function ProfileAnalysis() {
   };
 
   return (
-    <div className="p-6 h-full flex flex-col" data-testid="profile-analysis">
+    <div className="p-6 h-full flex flex-col bg-[#19161B]" data-testid="profile-analysis">
       <h1 className="text-3xl font-title text-[#CBC8C9] mb-4 border-b border-[#3A0A16] pb-2">
         Análise de Perfil
       </h1>
@@ -96,54 +96,59 @@ export default function ProfileAnalysis() {
       )}
 
       {beforeImage && !isLoading && (
-        <div className="flex-grow grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-auto p-1">
-          <div className="flex flex-col items-center">
-            <h2 className="text-2xl font-title text-center mb-2">Antes</h2>
-            <img
-              src={beforeImage}
-              alt="Perfil antes da análise"
-              className="w-full max-w-sm object-contain rounded-lg border border-[#3A0A16]"
-            />
+        <div className="flex-grow overflow-auto">
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            <div className="flex flex-col items-center">
+              <h2 className="text-2xl font-title text-center mb-4">Antes</h2>
+              <img
+                src={beforeImage}
+                alt="Perfil antes da análise"
+                className="w-full max-w-sm object-contain rounded-lg border border-[#3A0A16]"
+              />
+            </div>
+            <div className="flex flex-col items-center">
+              <h2 className="text-2xl font-title text-center mb-4">Depois</h2>
+              {afterImage ? (
+                <div className="relative group w-full max-w-sm">
+                  <img
+                    src={afterImage}
+                    alt="Perfil depois da análise"
+                    className="w-full object-contain rounded-lg border border-[#53050B]"
+                  />
+                  <button
+                    onClick={() => handleDownload(afterImage, 'perfil-analisado.png')}
+                    className="absolute top-2 right-2 bg-black/60 text-white p-2 rounded-full hover:bg-[#53050B] transition-opacity opacity-0 group-hover:opacity-100"
+                    aria-label="Baixar Imagem"
+                  >
+                    <Download className="w-5 h-5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full max-w-sm h-[400px] flex items-center justify-center bg-black/20 border border-[#53050B] rounded-lg text-center p-4">
+                  A imagem aprimorada aparecerá aqui.
+                </div>
+              )}
+            </div>
           </div>
-          <div className="flex flex-col items-center">
-            <h2 className="text-2xl font-title text-center mb-2">Depois</h2>
-            {afterImage ? (
-              <div className="relative group w-full max-w-sm">
-                <img
-                  src={afterImage}
-                  alt="Perfil depois da análise"
-                  className="w-full object-contain rounded-lg border border-[#53050B]"
-                />
-                <button
-                  onClick={() => handleDownload(afterImage, 'perfil-analisado.png')}
-                  className="absolute top-2 right-2 bg-black/60 text-white p-2 rounded-full hover:bg-[#53050B] transition-opacity opacity-0 group-hover:opacity-100"
-                  aria-label="Baixar Imagem"
-                >
-                  <Download className="w-5 h-5" />
-                </button>
-              </div>
-            ) : (
-              <div className="w-full max-w-sm h-full flex items-center justify-center bg-black/20 border border-[#53050B] rounded-lg text-center p-4">
-                A imagem aprimorada aparecerá aqui.
-              </div>
-            )}
-          </div>
-          {analysisText && (
-            <div className="lg:col-span-2 mt-4 p-4 border border-[#3A0A16] rounded-lg bg-black/30">
-              <h2 className="text-xl font-title text-[#CBC8C9] mb-2">Pontos de Ajuste Estratégico:</h2>
-              <ul className="list-decimal list-inside space-y-2 text-[#CBC8C9]/90">
-                {analysisText.split('\n').filter(line => line.trim() !== '').map((line, index) => (
-                  <li key={index}>{line.replace(/^\d+\.\s*/, '').trim()}</li>
+
+          {analysisPoints.length > 0 && (
+            <div className="mt-6 p-6 border border-[#3A0A16] rounded-lg bg-black/30">
+              <h2 className="text-xl font-title text-[#CBC8C9] mb-4">Pontos de Ajuste Estratégico:</h2>
+              <ol className="list-decimal list-inside space-y-3 text-[#CBC8C9]/90">
+                {analysisPoints.map((point, index) => (
+                  <li key={index} className="leading-relaxed">
+                    {point}
+                  </li>
                 ))}
-              </ul>
+              </ol>
               <button
                 onClick={() => {
                   setBeforeImage(null);
                   setAfterImage(null);
-                  setAnalysisText('');
+                  setAnalysisPoints([]);
                   setError(null);
                 }}
-                className="mt-4 px-6 py-2 bg-[#53050B] text-white rounded-lg font-semibold hover:bg-red-800"
+                className="mt-6 px-6 py-2 bg-[#53050B] text-white rounded-lg font-semibold hover:bg-red-800"
               >
                 Analisar Outro Perfil
               </button>
