@@ -19,14 +19,13 @@ export default function ContentLibrary() {
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [error, setError] = useState('');
 
-  const tabs = ['reels', 'carrossel', 'postEstatico', 'stories', 'ads'];
-  const tabLabels = {
-    reels: 'Reels',
-    carrossel: 'Carrossel',
-    postEstatico: 'Post Estático',
-    stories: 'Stories',
-    ads: 'Criativos (ADS)'
-  };
+  const tabs = [
+    { key: 'reels', label: 'Reels' },
+    { key: 'carrossel', label: 'Carrossel' },
+    { key: 'postEstatico', label: 'Post Estático' },
+    { key: 'stories', label: 'Stories' },
+    { key: 'ads', label: 'Criativos (ADS)' }
+  ];
 
   const handleGenerateThemes = async () => {
     if (!niche.trim()) return;
@@ -102,17 +101,17 @@ export default function ContentLibrary() {
   const renderThemesList = () => {
     if (isLoadingThemes) {
       return (
-        <p className="text-center text-[#CBC8C9]/70" data-testid="loading-themes">
+        <div className="text-center text-[#CBC8C9]/70 py-8">
           Buscando ideias estratégicas...
-        </p>
+        </div>
       );
     }
 
-    if (!themes || !themes[activeTab]) {
+    if (!themes || !themes[activeTab] || themes[activeTab].length === 0) {
       return (
-        <p className="text-center text-[#CBC8C9]/50 mt-8" data-testid="no-themes-message">
+        <div className="text-center text-[#CBC8C9]/50 py-8">
           Gere os temas para o seu nicho.
-        </p>
+        </div>
       );
     }
 
@@ -146,12 +145,9 @@ export default function ContentLibrary() {
   };
 
   return (
-    <div className="h-full flex flex-col" data-testid="content-library">
-      <div className="border-b border-[#3A0A16] p-6">
-        <h1 className="text-3xl font-title text-[#CBC8C9] mb-4" data-testid="library-title">
-          Biblioteca de Conteúdo
-        </h1>
-        <div className="flex gap-4">
+    <div className="h-full flex flex-col bg-[#19161B]" data-testid="content-library">
+      <div className="p-6">
+        <div className="flex gap-4 items-center mb-4">
           <input
             type="text"
             value={niche}
@@ -164,44 +160,43 @@ export default function ContentLibrary() {
           <button
             onClick={handleGenerateThemes}
             disabled={isLoadingThemes || !niche.trim()}
-            className="flex items-center px-6 py-2 bg-[#53050B] text-white rounded-lg font-semibold hover:bg-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid="generate-themes-button"
           >
-            <Sparkles className="w-4 h-4 mr-2" />
-            {isLoadingThemes ? 'Gerando...' : 'Gerar Temas'}
+            Gerar Temas
           </button>
         </div>
         {error && (
-          <p className="text-red-400 text-center mt-4" data-testid="error-message">{error}</p>
+          <p className="text-red-400 text-center mb-4" data-testid="error-message">{error}</p>
         )}
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        <div className="w-2/5 border-r border-[#3A0A16] flex flex-col" data-testid="themes-panel">
-          <div className="flex border-b border-[#3A0A16]">
+      <div className="flex-1 flex gap-6 px-6 pb-6 overflow-hidden">
+        <div className="w-1/2 flex flex-col border-2 border-[#53050B] rounded-lg overflow-hidden" data-testid="themes-panel">
+          <div className="flex border-b-2 border-[#53050B] bg-black">
             {tabs.map((tab) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
                 className={`flex-1 p-3 text-sm font-semibold transition-colors ${
-                  activeTab === tab
-                    ? 'bg-[#3A0A16] text-white border-b-2 border-[#D4AF37]'
+                  activeTab === tab.key
+                    ? 'bg-[#53050B] text-white'
                     : 'text-[#CBC8C9]/70 hover:bg-[#3A0A16]/30'
                 }`}
-                data-testid={`tab-${tab}`}
+                data-testid={`tab-${tab.key}`}
               >
-                {tabLabels[tab]}
+                {tab.label}
               </button>
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4 bg-black/50">
             {renderThemesList()}
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col" data-testid="content-panel">
-          <div className="border-b border-[#3A0A16] p-4 flex justify-between items-center">
+        <div className="w-1/2 flex flex-col border-2 border-[#53050B] rounded-lg overflow-hidden" data-testid="content-panel">
+          <div className="border-b-2 border-[#53050B] p-4 bg-black flex justify-between items-center">
             <h2 className="text-xl font-title text-[#CBC8C9]" data-testid="content-title">
               Roteiro do Conteúdo
             </h2>
@@ -217,7 +212,7 @@ export default function ContentLibrary() {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6 bg-black/50">
             {isLoadingContent && (
               <p className="text-center text-[#CBC8C9]/70" data-testid="loading-content">
                 Criando roteiro...
