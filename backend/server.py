@@ -748,55 +748,100 @@ Instrução clara: o que fazer após enviar este script (ex: aguardar 24h, fazer
 @api_router.post("/ai/analyze-profile")
 async def analyze_profile(request: dict, user_id: str = Depends(get_current_user)):
     try:
-        chat = LlmChat(
+        image_base64 = request.get('image', '')
+        
+        if not image_base64:
+            raise HTTPException(status_code=400, detail="Imagem do perfil é obrigatória")
+        
+        # Primeiro: Análise textual do perfil com visão
+        analysis_chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
-            session_id=f"profile_{user_id}_{uuid.uuid4()}",
+            session_id=f"profile_analysis_{user_id}_{uuid.uuid4()}",
             system_message="Você é A Estrategista, especialista em posicionamento digital e marketing no Instagram baseada na metodologia de Andressa Mallinsk. Você analisa perfis e dá feedback direto e acionável."
         )
-        chat.with_model("gemini", "gemini-3-flash-preview")
+        analysis_chat.with_model("gemini", "gemini-3-flash-preview")
         
-        prompt = """Analise este perfil do Instagram e forneça uma análise estratégica detalhada.
+        analysis_prompt = """Analise este print de perfil do Instagram e forneça uma análise estratégica detalhada.
 
-Liste de 5 a 8 pontos de ajuste estrat\u00e9gico que farão diferença real na convers\u00e3o. Cada ponto deve ser:
-- Direto e acion\u00e1vel
-- Focado em autoridade, prova social e convers\u00e3o
+Liste de 5 a 8 pontos de ajuste estratégico que farão diferença real na conversão. Cada ponto deve ser:
+- Direto e acionável
+- Focado em autoridade, prova social e conversão
 - Baseado na metodologia de Andressa Mallinsk
 
-Exemplos de pontos a analisar:
-1. Bio: Est\u00e1 clara a transforma\u00e7\u00e3o que você oferece?
+Analise especificamente:
+1. Bio: Está clara a transformação que você oferece?
 2. Foto de perfil: Transmite autoridade?
-3. Nome de usu\u00e1rio: Posiciona voc\u00ea como refer\u00eancia?
-4. Destaques: Est\u00e3o organizados para conduzir \u00e0 venda?
-5. Feed: Tem prova social e casos de sucesso vis\u00edveis?
+3. Nome de usuário: Posiciona você como referência?
+4. Destaques: Estão organizados para conduzir à venda?
+5. Feed: Tem prova social e casos de sucesso visíveis?
 
-Responda APENAS com uma lista numerada, sem introdu\u00e7\u00e3o ou conclus\u00e3o. Cada ponto deve come\u00e7ar com o que mudar e por qu\u00ea."""
+Responda APENAS com uma lista numerada, sem introdução ou conclusão. Cada ponto deve começar com o que mudar e por quê."""
         
-        message = UserMessage(text=prompt)
-        response = await chat.send_message(message)
+        analysis_message = UserMessage(
+            text=analysis_prompt,
+            file_contents=[ImageContent(image_base64)]
+        )
+        analysis_response = await analysis_chat.send_message(analysis_message)
         
         # Extrair os pontos numerados
-        lines = response.strip().split('\n')
+        lines = analysis_response.strip().split('\n')
         analysis_points = []
         for line in lines:
             clean_line = line.strip()
-            if clean_line and (clean_line[0].isdigit() or clean_line.startswith('-')):
-                # Remover numeração inicial se existir
-                point = clean_line.lstrip('0123456789.-) ')
+            if clean_line and (clean_line[0].isdigit() or clean_line.startswith('-') or clean_line.startswith('*')):
+                point = clean_line.lstrip('0123456789.-)*• ')
                 if point:
                     analysis_points.append(point)
         
-        # Por enquanto retorna a mesma imagem como "depois" (placeholder para IA de imagem real)
+        # Segundo: Gerar imagem do perfil melhorado com Nano Banana
+        image_chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"profile_image_{user_id}_{uuid.uuid4()}",
+            system_message="Você é especialista em design de perfis de Instagram. Crie versões melhoradas de perfis."
+        )
+        image_chat.with_model("gemini", "gemini-3-pro-image-preview").with_params(modalities=["image", "text"])
+        
+        improvements = "; ".join(analysis_points[:5]) if analysis_points else "bio mais clara, foto profissional, destaques organizados"
+        
+        image_prompt = f"""Com base neste perfil de Instagram, crie uma versão melhorada aplicando estas mudanças: {improvements}. 
+        
+Mantenha o mesmo layout de perfil do Instagram mas com:
+- Bio mais clara e focada em transformação
+- Elementos visuais mais profissionais
+- Aparência de autoridade e credibilidade
+
+Crie a imagem do perfil melhorado."""
+        
+        image_message = UserMessage(
+            text=image_prompt,
+            file_contents=[ImageContent(image_base64)]
+        )
+        
+        try:
+            text_response, images = await image_chat.send_message_multimodal_response(image_message)
+            if images and len(images) > 0:
+                after_image_url = f"data:{images[0]['mime_type']};base64,{images[0]['data']}"
+            else:
+                # Fallback: retorna a imagem original se não conseguir gerar
+                after_image_url = f"data:image/jpeg;base64,{image_base64}"
+        except Exception as img_error:
+            logger.warning(f"Não foi possível gerar imagem melhorada: {str(img_error)}")
+            after_image_url = f"data:image/jpeg;base64,{image_base64}"
+        
         return {
             "analysisPoints": analysis_points if analysis_points else [
-                "Tirei essa bobagem de 'anti-guru' do nome",
-                "Tirei a pergunta ret\u00f3rica da bio e reescrevi com foco em transforma\u00e7\u00e3o",
-                "Parei de seguir 95% das pessoas - voc\u00ea precisa de autoridade",
-                "Voc\u00ea \u00e9 muito novo pra esse terno bege. Troquei por algo mais alinhado",
-                "Link da bio mais objetivo e claro"
+                "Bio: Reescreva com foco na transformação que você oferece, não em quem você é",
+                "Foto de perfil: Use uma foto profissional que transmita autoridade e confiança",
+                "Nome de usuário: Simplifique e posicione você como referência no nicho",
+                "Destaques: Organize em ordem de jornada do cliente (Início > Prova Social > Oferta)",
+                "Feed: Adicione mais provas sociais e casos de sucesso visíveis nos primeiros posts"
             ],
-            "imageUrl": f"data:image/jpeg;base64,{request.get('image')}"
+            "imageUrl": after_image_url
         }
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Erro ao analisar perfil: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao analisar perfil: {str(e)}")
 
 @api_router.post("/ai/generate-photoshoot")
@@ -808,35 +853,36 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"photoshoot_{user_id}_{uuid.uuid4()}",
-            system_message="Você é especialista em fotografia profissional e direção de arte."
+            system_message="Você é especialista em fotografia profissional e direção de arte. Crie imagens de alta qualidade."
         )
-        chat.with_model("gemini", "gemini-3-flash-preview")
+        # Usar modelo Nano Banana para geração de imagens
+        chat.with_model("gemini", "gemini-3-pro-image-preview").with_params(modalities=["image", "text"])
         
-        full_prompt = f"CRIE uma imagem de ensaio fotográfico profissional: {prompt}. Use criatividade e qualidade alta."
+        full_prompt = f"Crie uma imagem de ensaio fotográfico profissional com as seguintes características: {prompt}. A imagem deve ser de alta qualidade, bem iluminada e com composição profissional."
         
         # Se tem imagem base, inclui no prompt
         if base_image and base_image.get('base64'):
             message = UserMessage(
-                text=full_prompt,
+                text=f"Use esta foto como referência e {full_prompt}",
                 file_contents=[ImageContent(base_image['base64'])]
             )
         else:
             message = UserMessage(text=full_prompt)
         
-        # Tentar com multimodal
-        try:
-            text_response, images = await chat.send_message_multimodal_response(message)
-            if images and len(images) > 0:
-                return {"imageUrl": f"data:{images[0]['mime_type']};base64,{images[0]['data']}"}
-        except:
-            pass
+        text_response, images = await chat.send_message_multimodal_response(message)
         
-        # Fallback: retorna placeholder
-        return {"imageUrl": "https://via.placeholder.com/1024x1024.png?text=Ensaio+Gerado"}
+        if images and len(images) > 0:
+            logger.info(f"Ensaio gerado com sucesso para usuário {user_id}")
+            return {"imageUrl": f"data:{images[0]['mime_type']};base64,{images[0]['data']}"}
+        else:
+            logger.warning(f"Nenhuma imagem retornada para usuário {user_id}")
+            raise HTTPException(status_code=500, detail="Não foi possível gerar a imagem. Tente novamente.")
             
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Erro ao gerar ensaio: {str(e)}")
-        return {"imageUrl": "https://via.placeholder.com/1024x1024.png?text=Erro+na+Geracao"}
+        raise HTTPException(status_code=500, detail=f"Erro ao gerar ensaio: {str(e)}")
 
 @api_router.post("/ai/edit-image")
 async def edit_image(request: dict, user_id: str = Depends(get_current_user)):
@@ -851,29 +897,30 @@ async def edit_image(request: dict, user_id: str = Depends(get_current_user)):
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"edit_{user_id}_{uuid.uuid4()}",
-            system_message="Você é especialista em edição de imagens."
+            system_message="Você é especialista em edição de imagens. Aplique as modificações solicitadas mantendo a qualidade."
         )
-        chat.with_model("gemini", "gemini-3-flash-preview")
+        # Usar modelo Nano Banana para edição de imagens
+        chat.with_model("gemini", "gemini-3-pro-image-preview").with_params(modalities=["image", "text"])
         
         message = UserMessage(
-            text=f"EDITE esta imagem: {prompt}. Descreva as mudanças aplicadas.",
+            text=f"Edite esta imagem aplicando a seguinte modificação: {prompt}. Mantenha a qualidade e aplique as mudanças de forma natural e profissional.",
             file_contents=[ImageContent(base64_img)]
         )
         
-        # Tentar edição multimodal
-        try:
-            text_response, images = await chat.send_message_multimodal_response(message)
-            if images and len(images) > 0:
-                return {"imageUrl": f"data:{images[0]['mime_type']};base64,{images[0]['data']}"}
-        except:
-            pass
+        text_response, images = await chat.send_message_multimodal_response(message)
         
-        # Fallback: retorna original (edição de imagem não suportada ainda)
-        return {"imageUrl": f"data:image/jpeg;base64,{base64_img}"}
+        if images and len(images) > 0:
+            logger.info(f"Imagem editada com sucesso para usuário {user_id}")
+            return {"imageUrl": f"data:{images[0]['mime_type']};base64,{images[0]['data']}"}
+        else:
+            logger.warning(f"Nenhuma imagem retornada na edição para usuário {user_id}")
+            raise HTTPException(status_code=500, detail="Não foi possível editar a imagem. Tente novamente.")
             
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Erro ao editar: {str(e)}")
-        return {"imageUrl": f"data:image/jpeg;base64,{image_data.get('base64','')}"}
+        raise HTTPException(status_code=500, detail=f"Erro ao editar imagem: {str(e)}")
 
 app.include_router(api_router)
 
