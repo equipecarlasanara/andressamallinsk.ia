@@ -452,6 +452,22 @@ async def sync_calendar(user_id: str = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao sincronizar: {str(e)}")
 
+@api_router.post("/calendar/connect")
+async def connect_google_calendar(token_data: dict, user_id: str = Depends(get_current_user)):
+    """Salva token do Google Calendar do usuário"""
+    try:
+        google_token = token_data.get('token')
+        if not google_token:
+            raise HTTPException(status_code=400, detail="Token não fornecido")
+        
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {"google_calendar_token": json.dumps(google_token)}}
+        )
+        return {"success": True, "message": "Google Calendar conectado"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro: {str(e)}")
+
 @api_router.get("/funnel/stats")
 async def get_funnel_stats(user_id: str = Depends(get_current_user)):
     """Calcula estatísticas do funil de vendas baseado nos leads"""
