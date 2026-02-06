@@ -319,7 +319,11 @@ export default function GoalsDashboard() {
             ) : (
               <div className="space-y-2">
                 {leads.slice(0, 5).map((lead) => (
-                  <div key={lead.id} className="flex items-center gap-2 p-2 bg-[#19161B] border border-[#3A0A16] rounded hover:border-[#53050B]/50">
+                  <div 
+                    key={lead.id} 
+                    className="flex items-center gap-2 p-2 bg-[#19161B] border border-[#3A0A16] rounded hover:border-[#53050B]/50 cursor-pointer"
+                    onClick={() => setShowLeadDetail(lead)}
+                  >
                     <User className="w-4 h-4 text-[#D4AF37]" />
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm text-[#CBC8C9] truncate">{lead.name}</h4>
@@ -328,6 +332,9 @@ export default function GoalsDashboard() {
                     {lead.followup_date && (
                       <Calendar className="w-4 h-4 text-yellow-500" />
                     )}
+                    <button onClick={(e) => { e.stopPropagation(); handleDeleteLead(lead.id); }} className="p-1 hover:bg-[#3A0A16]/50 rounded">
+                      <Trash2 className="w-3 h-3 text-red-400" />
+                    </button>
                   </div>
                 ))}
               </div>
