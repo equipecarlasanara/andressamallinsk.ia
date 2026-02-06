@@ -12,7 +12,7 @@ const getAuthHeaders = () => ({
 export default function ProfileAnalysis() {
   const [beforeImage, setBeforeImage] = useState(null);
   const [afterImage, setAfterImage] = useState(null);
-  const [analysisPoints, setAnalysisPoints] = useState([]);
+  const [analysisText, setAnalysisText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
@@ -24,7 +24,7 @@ export default function ProfileAnalysis() {
     setIsLoading(true);
     setError(null);
     setAfterImage(null);
-    setAnalysisPoints([]);
+    setAnalysisText('');
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -39,7 +39,7 @@ export default function ProfileAnalysis() {
           getAuthHeaders()
         );
         setAfterImage(response.data.imageUrl);
-        setAnalysisPoints(response.data.analysisPoints || []);
+        setAnalysisText(response.data.analysisText || '');
       } catch (err) {
         console.error('Erro na análise de perfil:', err);
         setError('Ocorreu um erro ao realizar a análise visual. Tente novamente.');
@@ -59,7 +59,7 @@ export default function ProfileAnalysis() {
   };
 
   return (
-    <div className="p-6 h-full flex flex-col bg-[#19161B]" data-testid="profile-analysis">
+    <div className="p-6 h-full flex flex-col bg-[#19161B] overflow-y-auto" data-testid="profile-analysis">
       <h1 className="text-3xl font-title text-[#CBC8C9] mb-4 border-b border-[#3A0A16] pb-2">
         Análise de Perfil
       </h1>
@@ -96,7 +96,7 @@ export default function ProfileAnalysis() {
       )}
 
       {beforeImage && !isLoading && (
-        <div className="flex-grow overflow-auto">
+        <div className="flex-grow">
           <div className="grid grid-cols-2 gap-6 mb-6">
             <div className="flex flex-col items-center">
               <h2 className="text-2xl font-title text-center mb-4">Antes</h2>
@@ -131,21 +131,27 @@ export default function ProfileAnalysis() {
             </div>
           </div>
 
-          {analysisPoints.length > 0 && (
+          {analysisText && (
             <div className="mt-6 p-6 border border-[#3A0A16] rounded-lg bg-black/30">
-              <h2 className="text-xl font-title text-[#CBC8C9] mb-4">Pontos de Ajuste Estratégico:</h2>
-              <ol className="list-decimal list-inside space-y-3 text-[#CBC8C9]/90">
-                {analysisPoints.map((point, index) => (
-                  <li key={index} className="leading-relaxed">
-                    {point}
-                  </li>
-                ))}
-              </ol>
+              <h2 className="text-xl font-title text-[#D4AF37] mb-4">Análise Estratégica:</h2>
+              <div className="text-[#CBC8C9]/90 whitespace-pre-wrap leading-relaxed space-y-4">
+                {analysisText.split('\n').map((line, index) => {
+                  // Destacar títulos com emojis
+                  if (line.match(/^[📸📝👤⭐📱🎯]/)) {
+                    return (
+                      <p key={index} className="font-bold text-[#D4AF37] mt-4 text-lg">
+                        {line}
+                      </p>
+                    );
+                  }
+                  return line.trim() ? <p key={index}>{line}</p> : null;
+                })}
+              </div>
               <button
                 onClick={() => {
                   setBeforeImage(null);
                   setAfterImage(null);
-                  setAnalysisPoints([]);
+                  setAnalysisText('');
                   setError(null);
                 }}
                 className="mt-6 px-6 py-2 bg-[#53050B] text-white rounded-lg font-semibold hover:bg-red-800"
