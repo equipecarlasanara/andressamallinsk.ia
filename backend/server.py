@@ -833,13 +833,7 @@ Crie a imagem do perfil melhorado."""
             after_image_url = f"data:image/jpeg;base64,{image_base64}"
         
         return {
-            "analysisPoints": analysis_points if analysis_points else [
-                "Bio: Reescreva com foco na transformação que você oferece, não em quem você é",
-                "Foto de perfil: Use uma foto profissional que transmita autoridade e confiança",
-                "Nome de usuário: Simplifique e posicione você como referência no nicho",
-                "Destaques: Organize em ordem de jornada do cliente (Início > Prova Social > Oferta)",
-                "Feed: Adicione mais provas sociais e casos de sucesso visíveis nos primeiros posts"
-            ],
+            "analysisText": analysis_text,
             "imageUrl": after_image_url
         }
     except HTTPException:
