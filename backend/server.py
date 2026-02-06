@@ -843,34 +843,53 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
     try:
         prompt = request.get('prompt', '')
         base_image = request.get('baseImage')
+        num_images = min(request.get('numImages', 10), 10)  # Máximo 10 por requisição
         
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"photoshoot_{user_id}_{uuid.uuid4()}",
-            system_message="Você é especialista em fotografia profissional e direção de arte. Crie imagens de alta qualidade."
-        )
-        # Usar modelo Nano Banana para geração de imagens
-        chat.with_model("gemini", "gemini-3-pro-image-preview").with_params(modalities=["image", "text"])
+        generated_images = []
         
-        full_prompt = f"Crie uma imagem de ensaio fotográfico profissional com as seguintes características: {prompt}. A imagem deve ser de alta qualidade, bem iluminada e com composição profissional."
-        
-        # Se tem imagem base, inclui no prompt
-        if base_image and base_image.get('base64'):
-            message = UserMessage(
-                text=f"Use esta foto como referência e {full_prompt}",
-                file_contents=[ImageContent(base_image['base64'])]
+        for i in range(num_images):
+            chat = LlmChat(
+                api_key=EMERGENT_LLM_KEY,
+                session_id=f"photoshoot_{user_id}_{uuid.uuid4()}_{i}",
+                system_message="Você é especialista em fotografia profissional e direção de arte. Crie imagens de alta qualidade, únicas e variadas."
             )
-        else:
-            message = UserMessage(text=full_prompt)
+            chat.with_model("gemini", "gemini-3-pro-image-preview").with_params(modalities=["image", "text"])
+            
+            # Variar o prompt para cada foto
+            variations = [
+                "close-up elegante", "plano médio", "plano americano", 
+                "perfil lateral", "olhando para câmera", "olhando para longe",
+                "sorrindo naturalmente", "expressão séria e confiante",
+                "com movimento", "pose clássica"
+            ]
+            variation = variations[i % len(variations)]
+            
+            full_prompt = f"Crie uma foto de ensaio fotográfico profissional #{i+1}: {prompt}. Estilo: {variation}. A imagem deve ser de alta qualidade, bem iluminada e com composição profissional."
+            
+            if base_image and base_image.get('base64'):
+                message = UserMessage(
+                    text=f"Use esta foto como referência da pessoa e {full_prompt}",
+                    file_contents=[ImageContent(base_image['base64'])]
+                )
+            else:
+                message = UserMessage(text=full_prompt)
+            
+            try:
+                text_response, images = await chat.send_message_multimodal_response(message)
+                if images and len(images) > 0:
+                    generated_images.append({
+                        "id": i + 1,
+                        "imageUrl": f"data:{images[0]['mime_type']};base64,{images[0]['data']}"
+                    })
+                    logger.info(f"Foto {i+1}/{num_images} gerada para usuário {user_id}")
+            except Exception as img_error:
+                logger.warning(f"Erro ao gerar foto {i+1}: {str(img_error)}")
+                continue
         
-        text_response, images = await chat.send_message_multimodal_response(message)
+        if len(generated_images) == 0:
+            raise HTTPException(status_code=500, detail="Não foi possível gerar nenhuma imagem. Tente novamente.")
         
-        if images and len(images) > 0:
-            logger.info(f"Ensaio gerado com sucesso para usuário {user_id}")
-            return {"imageUrl": f"data:{images[0]['mime_type']};base64,{images[0]['data']}"}
-        else:
-            logger.warning(f"Nenhuma imagem retornada para usuário {user_id}")
-            raise HTTPException(status_code=500, detail="Não foi possível gerar a imagem. Tente novamente.")
+        return {"images": generated_images, "total": len(generated_images)}
             
     except HTTPException:
         raise
