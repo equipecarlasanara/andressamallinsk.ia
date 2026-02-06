@@ -276,8 +276,12 @@ export default function GoalsDashboard() {
             ) : (
               <div className="space-y-2">
                 {weeklyActions.slice(0, 5).map((action) => (
-                  <div key={action.id} className="flex items-start gap-2 p-2 bg-[#19161B] border border-[#3A0A16] rounded hover:border-[#53050B]/50">
-                    <button onClick={() => handleToggleAction(action)} className="mt-1">
+                  <div 
+                    key={action.id} 
+                    className="flex items-start gap-2 p-2 bg-[#19161B] border border-[#3A0A16] rounded hover:border-[#53050B]/50 cursor-pointer"
+                    onClick={() => setShowActionDetail(action)}
+                  >
+                    <button onClick={(e) => { e.stopPropagation(); handleToggleAction(action); }} className="mt-1">
                       {action.completed ? (
                         <CheckCircle className="w-4 h-4 text-green-500" />
                       ) : (
@@ -288,8 +292,11 @@ export default function GoalsDashboard() {
                       <h4 className={`text-sm ${action.completed ? 'line-through text-[#CBC8C9]/50' : 'text-[#CBC8C9]'}`}>
                         {action.title}
                       </h4>
+                      {action.description && (
+                        <p className="text-xs text-[#CBC8C9]/50 truncate">{action.description}</p>
+                      )}
                     </div>
-                    <button onClick={() => handleDeleteAction(action.id)} className="p-1 hover:bg-[#3A0A16]/50 rounded">
+                    <button onClick={(e) => { e.stopPropagation(); handleDeleteAction(action.id); }} className="p-1 hover:bg-[#3A0A16]/50 rounded">
                       <Trash2 className="w-3 h-3 text-red-400" />
                     </button>
                   </div>
