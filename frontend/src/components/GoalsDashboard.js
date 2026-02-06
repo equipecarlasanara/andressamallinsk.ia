@@ -87,7 +87,9 @@ export default function GoalsDashboard() {
       ]);
       setCurrentGoal(goalRes.data);
       setWeeklyActions(actionsRes.data);
-      setLeads(leadsRes.data || []);
+      const leadsData = leadsRes.data || [];
+      setLeads(leadsData);
+      checkFollowUpNotifications(leadsData);
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
     } finally {
