@@ -160,6 +160,16 @@ export default function GoalsDashboard() {
     }
   };
 
+  const handleDeleteLead = async (leadId) => {
+    if (!window.confirm('Deseja remover este lead?')) return;
+    try {
+      await axios.delete(`${API}/leads/${leadId}`, getAuthHeaders());
+      setLeads(leads.filter(l => l.id !== leadId));
+    } catch (err) {
+      console.error('Erro ao deletar lead:', err);
+    }
+  };
+
   const openEditGoal = () => {
     setGoalForm({
       monthly_target: currentGoal?.monthly_target || '',
