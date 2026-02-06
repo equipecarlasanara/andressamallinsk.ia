@@ -805,11 +805,7 @@ Seja direta, firme e acionável. Foque em autoridade, prova social e conversão.
         )
         image_chat.with_model("gemini", "gemini-3-pro-image-preview").with_params(modalities=["image", "text"])
         
-        improvements = "; ".join(analysis_points[:5]) if analysis_points else "bio mais clara, foto profissional, destaques organizados"
-        
-        image_prompt = f"""Com base neste perfil de Instagram, crie uma versão melhorada aplicando estas mudanças: {improvements}. 
-        
-Mantenha o mesmo layout de perfil do Instagram mas com:
+        image_prompt = f"""Com base neste perfil de Instagram, crie uma versão melhorada com:
 - Bio mais clara e focada em transformação
 - Elementos visuais mais profissionais
 - Aparência de autoridade e credibilidade
