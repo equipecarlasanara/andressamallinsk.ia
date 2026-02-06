@@ -350,6 +350,13 @@ async def create_lead(lead_data: LeadCreate, user_id: str = Depends(get_current_
     
     return lead
 
+@api_router.delete("/leads/{lead_id}")
+async def delete_lead(lead_id: str, user_id: str = Depends(get_current_user)):
+    result = await db.leads.delete_one({"id": lead_id, "user_id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Lead não encontrado")
+    return {"success": True}
+
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
