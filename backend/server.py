@@ -794,15 +794,8 @@ Seja direta, firme e acionável. Foque em autoridade, prova social e conversão.
         )
         analysis_response = await analysis_chat.send_message(analysis_message)
         
-        # Extrair os pontos numerados
-        lines = analysis_response.strip().split('\n')
-        analysis_points = []
-        for line in lines:
-            clean_line = line.strip()
-            if clean_line and (clean_line[0].isdigit() or clean_line.startswith('-') or clean_line.startswith('*')):
-                point = clean_line.lstrip('0123456789.-)*• ')
-                if point:
-                    analysis_points.append(point)
+        # Retornar a análise completa formatada (já vem em tópicos do prompt)
+        analysis_text = analysis_response.strip()
         
         # Segundo: Gerar imagem do perfil melhorado com Nano Banana
         image_chat = LlmChat(
