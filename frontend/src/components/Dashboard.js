@@ -3,6 +3,7 @@ import Sidebar from './Sidebar';
 import GoalsDashboard from './GoalsDashboard';
 import ContentLibrary from './ContentLibrary';
 import EstrategistaDigital from './EstrategistaDigital';
+import Conselheira from './Conselheira';
 import ProfileAnalysis from './ProfileAnalysis';
 import PhotoshootCreator from './PhotoshootCreator';
 import ObjectionExterminator from './ObjectionExterminator';
@@ -26,6 +27,9 @@ export default function Dashboard({ user, onLogout }) {
         </div>
         <div className={`h-full w-full ${activeView === 'estrategista' ? 'block' : 'hidden'}`}>
           <EstrategistaDigital />
+        </div>
+        <div className={`h-full w-full ${activeView === 'conselheira' ? 'block' : 'hidden'}`}>
+          <Conselheira />
         </div>
         <div className={`h-full w-full ${activeView === 'analise' ? 'block' : 'hidden'}`}>
           <ProfileAnalysis />
