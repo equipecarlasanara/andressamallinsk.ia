@@ -467,6 +467,95 @@ export default function GoalsDashboard() {
           </div>
         </div>
       )}
+
+      {showActionDetail && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowActionDetail(null)}>
+          <div className="bg-[#19161B] border border-[#3A0A16] rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-[#D4AF37]">Detalhes da Ação</h3>
+              <button onClick={() => setShowActionDetail(null)} className="p-1 hover:bg-[#3A0A16]/50 rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-[#CBC8C9]/60">Título</p>
+                <p className={`text-lg ${showActionDetail.completed ? 'line-through text-[#CBC8C9]/50' : 'text-[#CBC8C9]'}`}>
+                  {showActionDetail.title}
+                </p>
+              </div>
+              {showActionDetail.description && (
+                <div>
+                  <p className="text-sm text-[#CBC8C9]/60">Descrição</p>
+                  <p className="text-[#CBC8C9] whitespace-pre-wrap">{showActionDetail.description}</p>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-[#CBC8C9]/60">Status:</p>
+                <span className={`px-2 py-1 rounded text-xs ${showActionDetail.completed ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400'}`}>
+                  {showActionDetail.completed ? 'Concluída' : 'Pendente'}
+                </span>
+              </div>
+              <button 
+                onClick={() => { handleToggleAction(showActionDetail); setShowActionDetail(null); }} 
+                className="w-full bg-[#53050B] hover:bg-red-800 text-white py-2 rounded-lg"
+              >
+                {showActionDetail.completed ? 'Marcar como Pendente' : 'Marcar como Concluída'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLeadDetail && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowLeadDetail(null)}>
+          <div className="bg-[#19161B] border border-[#3A0A16] rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-[#D4AF37]">Detalhes do Lead</h3>
+              <button onClick={() => setShowLeadDetail(null)} className="p-1 hover:bg-[#3A0A16]/50 rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-[#CBC8C9]/60">Nome</p>
+                <p className="text-lg text-[#CBC8C9]">{showLeadDetail.name}</p>
+              </div>
+              <div>
+                <p className="text-sm text-[#CBC8C9]/60">Telefone</p>
+                <p className="text-[#CBC8C9]">{showLeadDetail.phone}</p>
+              </div>
+              <div>
+                <p className="text-sm text-[#CBC8C9]/60">Etapa</p>
+                <span className="px-2 py-1 rounded text-xs bg-[#3A0A16] text-[#CBC8C9]">
+                  {KANBAN_STAGES.find(s => s.id === showLeadDetail.stage)?.label}
+                </span>
+              </div>
+              {showLeadDetail.followup_date && (
+                <div>
+                  <p className="text-sm text-[#CBC8C9]/60">Follow-up</p>
+                  <p className="text-yellow-500 flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    {new Date(showLeadDetail.followup_date).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+              )}
+              {showLeadDetail.notes && (
+                <div>
+                  <p className="text-sm text-[#CBC8C9]/60">Observações</p>
+                  <p className="text-[#CBC8C9] whitespace-pre-wrap bg-black/30 p-3 rounded">{showLeadDetail.notes}</p>
+                </div>
+              )}
+              <button 
+                onClick={() => { handleDeleteLead(showLeadDetail.id); setShowLeadDetail(null); }} 
+                className="w-full bg-red-900 hover:bg-red-800 text-white py-2 rounded-lg"
+              >
+                Excluir Lead
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
