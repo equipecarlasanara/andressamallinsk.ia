@@ -1,9 +1,10 @@
-import { Target, BookOpen, Brain, LogOut, User, Camera, Shield, Edit3, TrendingUp } from 'lucide-react';
+import { Target, BookOpen, Brain, LogOut, User, Camera, Shield, Edit3, TrendingUp, Heart } from 'lucide-react';
 
 export default function Sidebar({ activeView, setActiveView, user, onLogout }) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard de Metas', icon: Target },
     { id: 'estrategista', label: 'Estrategista Digital', icon: Brain },
+    { id: 'conselheira', label: 'A Conselheira', icon: Heart },
     { id: 'analise', label: 'Análise de Perfil', icon: User },
     { id: 'ensaio', label: 'Criar Ensaio Fotográfico', icon: Camera },
     { id: 'biblioteca', label: 'Biblioteca de Conteúdo', icon: BookOpen },
