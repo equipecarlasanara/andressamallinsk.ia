@@ -43,7 +43,38 @@ export default function GoalsDashboard() {
   const currentYear = new Date().getFullYear();
   const weekStart = getCurrentWeekStart();
 
+  // Sistema de notificações push para follow-up
+  const requestNotificationPermission = async () => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+  };
+
+  const checkFollowUpNotifications = (leadsData) => {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const leadsWithFollowUp = leadsData.filter(lead => {
+      if (!lead.followup_date) return false;
+      const followUpDate = lead.followup_date.split('T')[0];
+      return followUpDate === today;
+    });
+
+    leadsWithFollowUp.forEach(lead => {
+      const notificationKey = `followup_notified_${lead.id}_${today}`;
+      if (!localStorage.getItem(notificationKey)) {
+        new Notification('🔔 Follow-up Hoje!', {
+          body: `Lead: ${lead.name}\nTelefone: ${lead.phone}`,
+          icon: '/favicon.ico',
+          tag: lead.id
+        });
+        localStorage.setItem(notificationKey, 'true');
+      }
+    });
+  };
+
   useEffect(() => {
+    requestNotificationPermission();
     loadData();
   }, []);
 
