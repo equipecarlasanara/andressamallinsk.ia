@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
+import ConselheiraFloat from './components/ConselheiraFloat';
 import './App.css';
 
 function App() {
@@ -38,7 +39,12 @@ function App() {
         />
         <Route
           path="/*"
-          element={token ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
+          element={token ? (
+            <>
+              <Dashboard user={user} onLogout={handleLogout} />
+              <ConselheiraFloat />
+            </>
+          ) : <Navigate to="/login" />}
         />
       </Routes>
     </BrowserRouter>
