@@ -241,8 +241,11 @@ async def create_goal(goal_data: GoalCreate, user_id: str = Depends(get_current_
 @api_router.get("/goals/current", response_model=Optional[Goal])
 async def get_current_goal(user_id: str = Depends(get_current_user)):
     now = datetime.now(timezone.utc)
+    month_names_pt = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+    current_month_pt = month_names_pt[now.month - 1]
     goal_doc = await db.goals.find_one(
-        {"user_id": user_id, "year": now.year, "month": now.strftime("%B")},
+        {"user_id": user_id, "year": now.year, "month": current_month_pt},
         {"_id": 0}
     )
     if not goal_doc:
@@ -763,19 +766,27 @@ async def analyze_profile(request: dict, user_id: str = Depends(get_current_user
         
         analysis_prompt = """Analise este print de perfil do Instagram e forneça uma análise estratégica detalhada.
 
-Liste de 5 a 8 pontos de ajuste estratégico que farão diferença real na conversão. Cada ponto deve ser:
-- Direto e acionável
-- Focado em autoridade, prova social e conversão
-- Baseado na metodologia de Andressa Mallinsk
+FORMATO OBRIGATÓRIO - Responda EXATAMENTE neste formato com tópicos bem espaçados:
 
-Analise especificamente:
-1. Bio: Está clara a transformação que você oferece?
-2. Foto de perfil: Transmite autoridade?
-3. Nome de usuário: Posiciona você como referência?
-4. Destaques: Estão organizados para conduzir à venda?
-5. Feed: Tem prova social e casos de sucesso visíveis?
+📸 FOTO DE PERFIL
+[Sua análise sobre a foto - transmite autoridade? É profissional?]
 
-Responda APENAS com uma lista numerada, sem introdução ou conclusão. Cada ponto deve começar com o que mudar e por quê."""
+📝 BIO
+[Sua análise sobre a bio - está clara a transformação oferecida?]
+
+👤 NOME DE USUÁRIO
+[Sua análise - posiciona como referência no nicho?]
+
+⭐ DESTAQUES
+[Sua análise - estão organizados para conduzir à venda?]
+
+📱 FEED
+[Sua análise - tem prova social e casos de sucesso visíveis?]
+
+🎯 MISSÃO DO DIA
+[Uma ação específica e prática para fazer HOJE que vai gerar resultado imediato]
+
+Seja direta, firme e acionável. Foque em autoridade, prova social e conversão."""
         
         analysis_message = UserMessage(
             text=analysis_prompt,
