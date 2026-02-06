@@ -32,6 +32,8 @@ export default function GoalsDashboard() {
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showActionModal, setShowActionModal] = useState(false);
   const [showLeadModal, setShowLeadModal] = useState(false);
+  const [showActionDetail, setShowActionDetail] = useState(null);
+  const [showLeadDetail, setShowLeadDetail] = useState(null);
   const [goalForm, setGoalForm] = useState({ monthly_target: '', current_revenue: '' });
   const [actionForm, setActionForm] = useState({ title: '', description: '' });
   const [leadForm, setLeadForm] = useState({ name: '', phone: '', stage: 'novo', notes: '', followup_date: '' });
