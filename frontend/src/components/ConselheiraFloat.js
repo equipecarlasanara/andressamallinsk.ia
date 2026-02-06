@@ -1,32 +1,50 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Send, Heart, X, Minimize2, Maximize2 } from 'lucide-react';
+import { Send, Heart, X, Minimize2, Trash2 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const STORAGE_KEY = 'conselheira_chat_history';
+const MAX_MESSAGES_TO_AI = 10;
 
 const getAuthHeaders = () => ({
   headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
 });
 
+const initialMessage = {
+  role: 'assistant',
+  content: 'Oi, leoa! Sou a Andressa. Me conta o que está passando pela sua cabeça. Vou te dar minha opinião honesta, tá?'
+};
+
 export default function ConselheiraFloat() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([initialMessage]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId] = useState(`conselheira_${Date.now()}`);
   const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef(null);
 
+  // Carregar histórico do localStorage
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      setMessages([{
-        role: 'assistant',
-        content: 'Oi, leoa! Sou a Andressa. Me conta o que está passando pela sua cabeça. Vou te dar minha opinião honesta, tá?'
-      }]);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.length > 0) setMessages(parsed);
+      } catch (e) {
+        console.error('Erro ao carregar histórico:', e);
+      }
     }
-  }, [isOpen, messages.length]);
+  }, []);
+
+  // Salvar histórico no localStorage
+  useEffect(() => {
+    if (messages.length > 1) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (isOpen && !isMinimized) {
@@ -35,13 +53,19 @@ export default function ConselheiraFloat() {
     }
   }, [messages, isOpen, isMinimized]);
 
+  const handleClearHistory = () => {
+    setMessages([initialMessage]);
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!inputMessage.trim() || isLoading) return;
 
     const userMessage = inputMessage.trim();
     setInputMessage('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    const newMessages = [...messages, { role: 'user', content: userMessage }];
+    setMessages(newMessages);
     setIsLoading(true);
 
     try {
@@ -101,6 +125,11 @@ export default function ConselheiraFloat() {
           <span className="font-semibold text-[#CBC8C9]">A Conselheira</span>
         </div>
         <div className="flex items-center gap-1">
+          {messages.length > 1 && (
+            <button onClick={handleClearHistory} className="p-1 hover:bg-[#3A0A16]/50 rounded" title="Limpar histórico">
+              <Trash2 className="w-4 h-4 text-[#CBC8C9]/50 hover:text-red-400" />
+            </button>
+          )}
           <button onClick={() => setIsMinimized(true)} className="p-1 hover:bg-[#3A0A16]/50 rounded">
             <Minimize2 className="w-4 h-4 text-[#CBC8C9]" />
           </button>
