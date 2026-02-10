@@ -406,7 +406,8 @@ export default function GoalsDashboard() {
                       key={lead.id}
                       draggable
                       onDragStart={(e) => e.dataTransfer.setData('leadId', lead.id)}
-                      className="bg-[#19161B] border border-[#3A0A16] rounded p-2 cursor-move hover:border-[#53050B] transition-colors"
+                      onClick={() => setShowLeadDetail(lead)}
+                      className="bg-[#19161B] border border-[#3A0A16] rounded p-2 cursor-pointer hover:border-[#53050B] transition-colors"
                     >
                       <p className="text-sm font-semibold text-[#CBC8C9]">{lead.name}</p>
                       <p className="text-xs text-[#CBC8C9]/60">{lead.phone}</p>
