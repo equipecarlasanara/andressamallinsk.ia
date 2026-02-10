@@ -22,7 +22,7 @@ export default function Sidebar({ activeView, setActiveView, user, onLogout }) {
           data-testid="profile-image"
         />
         <h1 className="font-title text-3xl font-bold" style={{ color: '#D4AF37' }} data-testid="sidebar-title">
-          ESTRATEGISTA
+          A ESTRATEGISTA
         </h1>
         {user && (
           <p className="text-xs text-[#CBC8C9]/50 mt-2" data-testid="user-name">{user.name}</p>

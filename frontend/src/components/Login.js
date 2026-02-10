@@ -41,7 +41,7 @@ export default function Login({ onLogin }) {
           <h1 className="font-title text-5xl font-bold mb-2" style={{ color: '#D4AF37' }} data-testid="app-title">
             ESTRATEGISTA
           </h1>
-          <p className="text-[#CBC8C9]/70 text-sm tracking-widest">SEGUNDO CÉREBRO DA ANDRESSA MALLINSK</p>
+          <p className="text-[#CBC8C9]/70 text-sm tracking-widest">O MESMO CÉREBRO QUE CONSTRUIU MILHÕES, AGORA CONSTRUINDO COM VOCÊ.</p>
         </div>
 
         <div className="bg-black/30 border border-[#3A0A16] rounded-lg p-8">
