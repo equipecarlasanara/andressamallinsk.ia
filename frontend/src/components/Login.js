@@ -39,7 +39,7 @@ export default function Login({ onLogin }) {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="font-title text-5xl font-bold mb-2" style={{ color: '#D4AF37' }} data-testid="app-title">
-            ESTRATEGISTA
+            A ESTRATEGISTA
           </h1>
           <p className="text-[#CBC8C9]/70 text-sm tracking-widest">O MESMO CÉREBRO QUE CONSTRUIU MILHÕES, AGORA CONSTRUINDO COM VOCÊ.</p>
         </div>
