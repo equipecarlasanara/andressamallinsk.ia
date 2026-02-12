@@ -628,7 +628,7 @@ async def generate_content_api(request: GenerateContentRequest, user_id: str = D
             session_id=f"content_{user_id}_{uuid.uuid4()}",
             system_message="Você é uma estrategista de negócios especializada em criar roteiros de conteúdo."
         )
-        chat.with_model("gemini", "gemini-3-flash-preview")
+        chat.with_model("gemini", "gemini-pro")
         
         format_map = {
             "reels": "um Reel de 30 segundos",
@@ -689,7 +689,7 @@ async def chat_with_ai(chat_msg: ChatMessage, user_id: str = Depends(get_current
             session_id=session_id,
             system_message=ESTRATEGISTA_SYSTEM_INSTRUCTION
         )
-        chat.with_model("gemini", "gemini-3-flash-preview")
+        chat.with_model("gemini", "gemini-pro")
         
         message = UserMessage(text=chat_msg.message)
         response = await chat.send_message(message)
@@ -727,7 +727,7 @@ async def chat_conselheira(chat_msg: ChatMessage, user_id: str = Depends(get_cur
             session_id=session_id,
             system_message=CONSELHEIRA_SYSTEM_INSTRUCTION
         )
-        chat.with_model("gemini", "gemini-3-flash-preview")
+        chat.with_model("gemini", "gemini-pro")
         
         message = UserMessage(text=chat_msg.message)
         response = await chat.send_message(message)
@@ -745,7 +745,7 @@ async def analyze_objection(request: dict, user_id: str = Depends(get_current_us
             session_id=f"objection_{user_id}_{uuid.uuid4()}",
             system_message=ESTRATEGISTA_SYSTEM_INSTRUCTION
         )
-        chat.with_model("gemini", "gemini-3-flash-preview")
+        chat.with_model("gemini", "gemini-pro")
         
         prompt = """Analise o print desta conversa de vendas. RESPONDA em 3 blocos curtos:
 
