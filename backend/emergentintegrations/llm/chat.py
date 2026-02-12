@@ -70,4 +70,10 @@ class LlmChat:
             return response.text
         except Exception as e:
             print(f"Error sending message to LLM: {e}")
+            if "404" in str(e) or "not found" in str(e).lower():
+                try:
+                    available_models = [m.name for m in genai.list_models()]
+                    return f"Erro 404: Modelo '{self.model_name}' não encontrado. Modelos disponíveis: {', '.join(available_models)}"
+                except:
+                    pass
             return f"Erro ao processar mensagem: {str(e)}"
