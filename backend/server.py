@@ -604,9 +604,12 @@ Exemplo da estrutura JSON de resposta esperada:
   "postEstatico": [{{"title": "Frase de impacto sobre [tema central]", "description": "Post de posicionamento para gerar comentários e conexão."}}],
   "stories": [{{"title": "Narrativa: O dia que eu errei em [situação]", "description": "Contar uma história de vulnerabilidade que gera conexão e ensina algo."}}],
   "ads": [{{"title": "Para você que [segmento], mas não consegue [resultado]", "description": "Criativo focado em uma dor específica para atrair leads qualificados."}}]
-}}"""
+}}
         
-        prompt += "\n\nIMPORTANTE: Responda APENAS com o objeto JSON, sem textos adicionais ou blocos de código markdown."
+        IMPORTANTE: Responda APENAS com o objeto JSON puro. Não use blocos de código markdown (```json). Não escreva nenhuma explicação antes ou depois do JSON. Se você falhar em enviar apenas o JSON, o sistema quebrará.
+        """
+        
+        prompt += "\n\nResponda APENAS o JSON. Não use blocos de código."
         message = UserMessage(text=prompt)
         response = await chat.send_message(message)
         
@@ -969,7 +972,7 @@ async def edit_image(request: dict, user_id: str = Depends(get_current_user)):
             session_id=f"edit_{user_id}_{uuid.uuid4()}",
             system_message="Você é especialista em edição de imagens. Aplique as modificações solicitadas mantendo a qualidade."
         )
-        # Usar modelo Nano Banana para edição de imagens
+        # Usar modelo Gemini 3 para edição de imagens
         chat.with_model("gemini", "gemini-3-pro-image-preview")\
             .with_params(modalities=["image", "text"])
         
