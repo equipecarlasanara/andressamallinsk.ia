@@ -37,11 +37,9 @@ class LlmChat:
 
     async def send_message(self, message: UserMessage) -> str:
         try:
-            # Prepare content parts
             parts = [message.text]
             
             for content in message.file_contents:
-                # Assuming simple base64 handling for now
                 if isinstance(content, ImageContent):
                      img_data = content.image_base64.split(",")[-1] if "," in content.image_base64 else content.image_base64
                      parts.append({"mime_type": "image/jpeg", "data": base64.b64decode(img_data)})
@@ -58,3 +56,37 @@ class LlmChat:
         except Exception as e:
             print(f"Error sending message to LLM: {e}")
             return f"Erro ao processar mensagem: {str(e)}"
+
+    async def send_message_multimodal_response(self, message: UserMessage) -> tuple:
+        try:
+            parts = [message.text]
+            for content in message.file_contents:
+                if isinstance(content, ImageContent):
+                     img_data = content.image_base64.split(",")[-1] if "," in content.image_base64 else content.image_base64
+                     parts.append({"mime_type": "image/jpeg", "data": base64.b64decode(img_data)})
+
+            model = genai.GenerativeModel(
+                model_name=self.model_name,
+                system_instruction=self.system_message
+            )
+            
+            response = await model.generate_content_async(parts)
+            
+            text_response = response.text
+            images = []
+            
+            # Verificar se a IA gerou imagens (raro no Gemini, mas suportado pelo código original)
+            if hasattr(response, 'candidates'):
+                for candidate in response.candidates:
+                    if hasattr(candidate.content, 'parts'):
+                        for part in candidate.content.parts:
+                            if hasattr(part, 'inline_data') and part.inline_data:
+                                images.append({
+                                    "mime_type": part.inline_data.mime_type,
+                                    "data": base64.b64encode(part.inline_data.data).decode('utf-8')
+                                })
+            
+            return text_response, images
+        except Exception as e:
+            print(f"Error in multimodal response: {e}")
+            raise e
