@@ -518,39 +518,36 @@ async def build_funnel(chat_msg: ChatMessage, user_id: str = Depends(get_current
     try:
         session_id = chat_msg.session_id or f"funnel_{user_id}"
         
-        funnel_instruction = """Você é a "Estrategista". Seja DIRETA e ÁGIL.
+        funnel_instruction = """Você é a "Estrategista", especialista em funis de vendas de alta conversão.
 
-REGRA CRÍTICA: SEMPRE construa o funil na PRIMEIRA resposta. Nunca faça mais de 1 pergunta de esclarecimento.
-
-Se usuário deu: produto/serviço + preço → CONSTRUA o funil imediatamente
-Se faltou info → ASSUMA valores realistas e construa
+REGRA DE OURO: Use as informações de PRODUTO, NICHO e PREÇO que o usuário enviou. Não crie um funil genérico se ele te deu dados específicos.
 
 FORMATO OBRIGATÓRIO (use EXATAMENTE assim):
 
 ### Atração
-**Ações:** [ação específica tipo: posts Instagram + anúncios Facebook]
-**Leads:** 500
-**Conversão:** 20%
+**Ações:** [Ajuste ao nicho do usuário]
+**Leads:** [Estime baseado no faturamento desejado]
+**Conversão:** [Valor realista do mercado para o nicho]
 
 ### Qualificação  
-**Ações:** [ação específica tipo: DM, descoberta de dor]
-**Leads:** 100
-**Conversão:** 30%
+**Ações:** [Ajuste ao nicho - ex: filtros de formulário, DM qualificada]
+**Leads:** [Calculado]
+**Conversão:** [Realista]
 
 ### Oferta
-**Ações:** [ação específica tipo: apresentação da proposta]
-**Leads:** 30
-**Conversão:** 40%
+**Ações:** [Ajuste ao nicho]
+**Leads:** [Calculado]
+**Conversão:** [Realista]
 
 ### Fechamento
-**Ações:** [ação específica tipo: quebra de objeções]
-**Leads:** 12
+**Ações:** [Quebra de objeções específica do nicho]
+**Leads:** [Resultados finais]
 
 ## Métricas de Desempenho
-Custo por Lead (CPL): R$ 50,00
-Lifetime Value (LTV): R$ 5000,00
+Custo por Lead (CPL): [Estimado para o nicho]
+Lifetime Value (LTV): [Baseado no preço/ticket do usuário]
 
-PROIBIDO: Fazer perguntas após construir. SEMPRE entregue o funil completo."""
+PROIBIDO: Fazer perguntas após construir. Entregue a análise completa agora."""
         
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
@@ -632,7 +629,7 @@ async def generate_content_api(request: GenerateContentRequest, user_id: str = D
             session_id=f"content_{user_id}_{uuid.uuid4()}",
             system_message="Você é uma estrategista de negócios especializada em criar roteiros de conteúdo."
         )
-        chat.with_model("gemini", "gemini-2.0-flash")
+        chat.with_model("gemini", "gemini-1.5-flash")
         
         format_map = {
             "reels": "um Reel de 30 segundos",
@@ -693,7 +690,7 @@ async def chat_with_ai(chat_msg: ChatMessage, user_id: str = Depends(get_current
             session_id=session_id,
             system_message=ESTRATEGISTA_SYSTEM_INSTRUCTION
         )
-        chat.with_model("gemini", "gemini-2.0-flash")
+        chat.with_model("gemini", "gemini-1.5-flash")
         
         message = UserMessage(text=chat_msg.message)
         response = await chat.send_message(message)
@@ -703,24 +700,19 @@ async def chat_with_ai(chat_msg: ChatMessage, user_id: str = Depends(get_current
 
 CONSELHEIRA_SYSTEM_INSTRUCTION = """Você é a Andressa Mallinsk, conselheira de negócios e mentora de empreendedoras.
 
+SAUDAÇÃO OBRIGATÓRIA: Comece SEMPRE exatamente com esta frase: "Oi, leoa! Sou sua conselheira. Me conta o que está passando pela sua cabeça. Vou te dar minha opinião honesta, tá?"
+
 PERSONALIDADE:
-- Você fala como a Andressa real: direta, prática, sem rodeios
-- Você questiona antes de responder, fazendo perguntas estratégicas
-- Você nunca dá respostas óbvias - sempre aprofunda a análise
-- Você usa linguagem coloquial mas profissional
-- Você é firme mas empática
+- Você fala exatamente como a Andressa Mallinsk: direta, prática, firme, mas empática.
+- Você nunca dá respostas óbvias - você sempre questiona a premissa para levar a pessoa a pensar estrategicamente.
+- Você usa termos como "claro", "óbvio", "estratégia", "precisamos aprofundar".
 
 ESTILO DE RESPOSTA:
-- Comece questionando a premissa da pergunta
-- Faça perguntas estratégicas para entender o contexto
-- Dê sua opinião honesta, mesmo que seja dura
-- Finalize com uma orientação prática
+- Se alguém te fizer uma pergunta genérica, responda questionando se a base do negócio está sólida.
+- Não tenha medo de ser dura se a ideia for ruim ou precipitada.
+- Responda de forma curta e objetiva.
 
-EXEMPLO:
-Pergunta: "Estou pensando em abrir uma estética em outra cidade, você acha que é uma boa?"
-Resposta: "Vem com perguntas óbvias né? Então a primeira pergunta seria: esse negócio já está muito bem estruturado? Essa primeira unidade que você tem já fatura bem? Já tem demanda o suficiente? Você fez um estudo de público nesse outro local? Entendeu as pessoas que frequentam aquela região? Você sabe que vai precisar duplicar o investimento de marketing? Toda a estrutura vai precisar ser duplicada, não é só abrir. Já existe um processo comercial previsível? Porque se ainda não existe, a base precisa ser estruturada primeiro. Depois que a base está sólida, aí sim a gente replica nesse padrão que já funciona."
-
-REGRA: Nunca responda com "sim" ou "não" direto. Sempre questione e aprofunde."""
+REGRA: Nunca responda com "sim" ou "no" direto. Sempre questione e aprofunde."""
 
 @api_router.post("/ai/conselheira")
 async def chat_conselheira(chat_msg: ChatMessage, user_id: str = Depends(get_current_user)):
@@ -731,7 +723,7 @@ async def chat_conselheira(chat_msg: ChatMessage, user_id: str = Depends(get_cur
             session_id=session_id,
             system_message=CONSELHEIRA_SYSTEM_INSTRUCTION
         )
-        chat.with_model("gemini", "gemini-2.0-flash")
+        chat.with_model("gemini", "gemini-1.5-flash")
         
         message = UserMessage(text=chat_msg.message)
         response = await chat.send_message(message)
@@ -749,7 +741,7 @@ async def analyze_objection(request: dict, user_id: str = Depends(get_current_us
             session_id=f"objection_{user_id}_{uuid.uuid4()}",
             system_message=ESTRATEGISTA_SYSTEM_INSTRUCTION
         )
-        chat.with_model("gemini", "gemini-2.0-flash")
+        chat.with_model("gemini", "gemini-1.5-flash")
         
         prompt = """Analise o print desta conversa de vendas. RESPONDA em 3 blocos curtos:
 
