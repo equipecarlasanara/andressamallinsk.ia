@@ -18,7 +18,7 @@ class LlmChat:
         self.api_key = api_key
         self.session_id = session_id
         self.system_message = system_message
-        self.model_name = "gemini-1.5-flash" # Default fallback
+        self.model_name = "gemini-2.0-flash" # Default fallback mais moderno
         self._configure()
         self.history = []
         if system_message:
@@ -67,25 +67,37 @@ class LlmChat:
 
             model = genai.GenerativeModel(
                 model_name=self.model_name,
-                system_instruction=self.system_message
+                system_instruction=self.system_instruction_text if hasattr(self, 'system_instruction_text') else self.system_message
             )
             
             response = await model.generate_content_async(parts)
             
-            text_response = response.text
+            text_response = ""
             images = []
             
-            # Verificar se a IA gerou imagens (raro no Gemini, mas suportado pelo código original)
-            if hasattr(response, 'candidates'):
-                for candidate in response.candidates:
-                    if hasattr(candidate.content, 'parts'):
-                        for part in candidate.content.parts:
-                            if hasattr(part, 'inline_data') and part.inline_data:
-                                images.append({
-                                    "mime_type": part.inline_data.mime_type,
-                                    "data": base64.b64encode(part.inline_data.data).decode('utf-8')
-                                })
+            if hasattr(response, 'candidates') and response.candidates:
+                candidate = response.candidates[0]
+                if hasattr(candidate.content, 'parts'):
+                    for part in candidate.content.parts:
+                        # Capturar texto
+                        if hasattr(part, 'text') and part.text:
+                            text_response += part.text
+                        
+                        # Capturar imagens geradas
+                        inline_data = getattr(part, 'inline_data', None)
+                        if inline_data:
+                            images.append({
+                                "mime_type": inline_data.mime_type,
+                                "data": base64.b64encode(inline_data.data).decode('utf-8')
+                            })
             
+            # Se text_response ainda estiver vazio, tenta pegar do response.text (pode lançar erro se não houver texto)
+            if not text_response:
+                try:
+                    text_response = response.text
+                except:
+                    pass
+                    
             return text_response, images
         except Exception as e:
             print(f"Error in multimodal response: {e}")
