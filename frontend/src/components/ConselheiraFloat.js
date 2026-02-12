@@ -13,7 +13,7 @@ const getAuthHeaders = () => ({
 
 const initialMessage = {
   role: 'assistant',
-  content: 'Oi, leoa! Sou a Andressa. Me conta o que está passando pela sua cabeça. Vou te dar minha opinião honesta, tá?'
+  content: 'Oi, leoa! Sou sua conselheira. Me conta o que está passando pela sua cabeça. Vou te dar minha opinião honesta, tá?'
 };
 
 export default function ConselheiraFloat() {
@@ -78,9 +78,9 @@ export default function ConselheiraFloat() {
       if (isMinimized) setUnreadCount(prev => prev + 1);
     } catch (err) {
       console.error('Erro:', err);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Desculpa, tive um problema aqui. Pode repetir?' 
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Desculpa, tive um problema aqui. Pode repetir?'
       }]);
     } finally {
       setIsLoading(false);
@@ -146,11 +146,10 @@ export default function ConselheiraFloat() {
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[85%] rounded-lg p-3 text-sm ${
-                message.role === 'user'
+              className={`max-w-[85%] rounded-lg p-3 text-sm ${message.role === 'user'
                   ? 'bg-[#53050B] text-white'
                   : 'bg-black/30 border border-[#D4AF37]/30 text-[#CBC8C9]'
-              }`}
+                }`}
             >
               <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
             </div>

@@ -19,7 +19,7 @@ export default function Conselheira() {
   useEffect(() => {
     setMessages([{
       role: 'assistant',
-      content: 'Oi, leoa! Sou a Andressa. Pode me contar o que está passando pela sua cabeça, qual decisão você está querendo tomar ou qual situação está te deixando em dúvida. Vou te dar minha opinião honesta, tá?'
+      content: 'Oi, leoa! Sou sua conselheira. Me conta o que está passando pela sua cabeça. Vou te dar minha opinião honesta, tá?'
     }]);
   }, []);
 
