@@ -557,7 +557,7 @@ PROIBIDO: Fazer perguntas após construir. SEMPRE entregue o funil completo."""
             session_id=session_id,
             system_message=funnel_instruction
         )
-        chat.with_model("gemini", "gemini-2.0-flash")
+        chat.with_model("gemini", "gemini-1.5-flash")
         
         message = UserMessage(text=chat_msg.message)
         response = await chat.send_message(message)
@@ -589,7 +589,7 @@ async def generate_themes(request: GenerateThemesRequest, user_id: str = Depends
             session_id=f"themes_{user_id}_{uuid.uuid4()}",
             system_message="Você é uma estrategista de negócios que gera ideias de conteúdo estratégico."
         )
-        chat.with_model("gemini", "gemini-2.0-flash")
+        chat.with_model("gemini", "gemini-1.5-flash")
         
         prompt = f"""Para o nicho de "{request.niche}", gere uma lista de pelo menos 50 temas de conteúdo altamente estratégicos, distribuídos entre diferentes formatos. A resposta DEVE ser um único objeto JSON.
 O objeto deve ter as seguintes chaves: "reels", "carrossel", "postEstatico", "stories", e "ads".
@@ -820,7 +820,7 @@ async def analyze_profile(request: dict, user_id: str = Depends(get_current_user
             session_id=f"profile_analysis_{user_id}_{uuid.uuid4()}",
             system_message="Você é A Estrategista, especialista em posicionamento digital e marketing no Instagram baseada na metodologia de Andressa Mallinsk. Você analisa perfis e dá feedback direto e acionável."
         )
-        analysis_chat.with_model("gemini", "gemini-2.0-flash")
+        analysis_chat.with_model("gemini", "gemini-1.5-flash")
         
         analysis_prompt = """Analise este print de perfil do Instagram e forneça uma análise estratégica detalhada.
 
