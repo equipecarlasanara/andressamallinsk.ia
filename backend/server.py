@@ -606,6 +606,7 @@ Exemplo da estrutura JSON de resposta esperada:
   "ads": [{{"title": "Para você que [segmento], mas não consegue [resultado]", "description": "Criativo focado em uma dor específica para atrair leads qualificados."}}]
 }}"""
         
+        prompt += "\n\nIMPORTANTE: Responda APENAS com o objeto JSON, sem textos adicionais ou blocos de código markdown."
         message = UserMessage(text=prompt)
         response = await chat.send_message(message)
         
@@ -857,7 +858,7 @@ Seja direta, firme e acionável. Foque em autoridade, prova social e conversão.
             session_id=f"profile_image_{user_id}_{uuid.uuid4()}",
             system_message="Você é especialista em design de perfis de Instagram. Crie versões melhoradas de perfis."
         )
-        image_chat.with_model("gemini", "gemini-2.0-flash")\
+        image_chat.with_model("gemini", "gemini-3-pro-image-preview")\
             .with_params(modalities=["image", "text"])
         
         image_prompt = f"""Com base neste perfil de Instagram, crie uma versão melhorada com:
@@ -908,7 +909,7 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
                 session_id=f"photoshoot_{user_id}_{uuid.uuid4()}_{i}",
                 system_message="Você é especialista em fotografia profissional e direção de arte. Crie imagens de alta qualidade, únicas e variadas."
             )
-            chat.with_model("gemini", "gemini-2.0-flash")\
+            chat.with_model("gemini", "gemini-3-pro-image-preview")\
                 .with_params(modalities=["image", "text"])
             
             # Variar o prompt para cada foto
@@ -969,7 +970,7 @@ async def edit_image(request: dict, user_id: str = Depends(get_current_user)):
             system_message="Você é especialista em edição de imagens. Aplique as modificações solicitadas mantendo a qualidade."
         )
         # Usar modelo Nano Banana para edição de imagens
-        chat.with_model("gemini", "gemini-2.0-flash")\
+        chat.with_model("gemini", "gemini-3-pro-image-preview")\
             .with_params(modalities=["image", "text"])
         
         message = UserMessage(
