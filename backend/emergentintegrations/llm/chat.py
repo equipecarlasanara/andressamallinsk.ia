@@ -35,6 +35,13 @@ class LlmChat:
         self.model_name = model_name
         return self
 
+    def with_params(self, **params):
+        # Armazena parâmetros adicionais como modalidades
+        if not hasattr(self, 'params'):
+            self.params = {}
+        self.params.update(params)
+        return self
+
     async def send_message(self, message: UserMessage) -> str:
         try:
             parts = [message.text]
@@ -67,7 +74,7 @@ class LlmChat:
 
             model = genai.GenerativeModel(
                 model_name=self.model_name,
-                system_instruction=self.system_instruction_text if hasattr(self, 'system_instruction_text') else self.system_message
+                system_instruction=self.system_message
             )
             
             response = await model.generate_content_async(parts)
@@ -91,7 +98,7 @@ class LlmChat:
                                 "data": base64.b64encode(inline_data.data).decode('utf-8')
                             })
             
-            # Se text_response ainda estiver vazio, tenta pegar do response.text (pode lançar erro se não houver texto)
+            # Fallback se text_response estiver vazio
             if not text_response:
                 try:
                     text_response = response.text
