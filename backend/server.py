@@ -557,7 +557,7 @@ PROIBIDO: Fazer perguntas após construir. SEMPRE entregue o funil completo."""
             session_id=session_id,
             system_message=funnel_instruction
         )
-        chat.with_model("gemini", "gemini-pro")
+        chat.with_model("gemini", "gemini-1.5-pro")
         
         message = UserMessage(text=chat_msg.message)
         response = await chat.send_message(message)
@@ -589,7 +589,7 @@ async def generate_themes(request: GenerateThemesRequest, user_id: str = Depends
             session_id=f"themes_{user_id}_{uuid.uuid4()}",
             system_message="Você é uma estrategista de negócios que gera ideias de conteúdo estratégico."
         )
-        chat.with_model("gemini", "gemini-pro")
+        chat.with_model("gemini", "gemini-1.5-pro")
         
         prompt = f"""Para o nicho de "{request.niche}", gere uma lista de pelo menos 50 temas de conteúdo altamente estratégicos, distribuídos entre diferentes formatos. A resposta DEVE ser um único objeto JSON.
 O objeto deve ter as seguintes chaves: "reels", "carrossel", "postEstatico", "stories", e "ads".
@@ -628,7 +628,7 @@ async def generate_content_api(request: GenerateContentRequest, user_id: str = D
             session_id=f"content_{user_id}_{uuid.uuid4()}",
             system_message="Você é uma estrategista de negócios especializada em criar roteiros de conteúdo."
         )
-        chat.with_model("gemini", "gemini-pro")
+        chat.with_model("gemini", "gemini-1.5-pro")
         
         format_map = {
             "reels": "um Reel de 30 segundos",
@@ -689,7 +689,7 @@ async def chat_with_ai(chat_msg: ChatMessage, user_id: str = Depends(get_current
             session_id=session_id,
             system_message=ESTRATEGISTA_SYSTEM_INSTRUCTION
         )
-        chat.with_model("gemini", "gemini-pro")
+        chat.with_model("gemini", "gemini-1.5-pro")
         
         message = UserMessage(text=chat_msg.message)
         response = await chat.send_message(message)
@@ -727,7 +727,7 @@ async def chat_conselheira(chat_msg: ChatMessage, user_id: str = Depends(get_cur
             session_id=session_id,
             system_message=CONSELHEIRA_SYSTEM_INSTRUCTION
         )
-        chat.with_model("gemini", "gemini-pro")
+        chat.with_model("gemini", "gemini-1.5-pro")
         
         message = UserMessage(text=chat_msg.message)
         response = await chat.send_message(message)
@@ -745,7 +745,7 @@ async def analyze_objection(request: dict, user_id: str = Depends(get_current_us
             session_id=f"objection_{user_id}_{uuid.uuid4()}",
             system_message=ESTRATEGISTA_SYSTEM_INSTRUCTION
         )
-        chat.with_model("gemini", "gemini-pro")
+        chat.with_model("gemini", "gemini-1.5-pro")
         
         prompt = """Analise o print desta conversa de vendas. RESPONDA em 3 blocos curtos:
 
@@ -816,7 +816,7 @@ async def analyze_profile(request: dict, user_id: str = Depends(get_current_user
             session_id=f"profile_analysis_{user_id}_{uuid.uuid4()}",
             system_message="Você é A Estrategista, especialista em posicionamento digital e marketing no Instagram baseada na metodologia de Andressa Mallinsk. Você analisa perfis e dá feedback direto e acionável."
         )
-        analysis_chat.with_model("gemini", "gemini-pro")
+        analysis_chat.with_model("gemini", "gemini-1.5-pro")
         
         analysis_prompt = """Analise este print de perfil do Instagram e forneça uma análise estratégica detalhada.
 
@@ -857,7 +857,7 @@ Seja direta, firme e acionável. Foque em autoridade, prova social e conversão.
             session_id=f"profile_image_{user_id}_{uuid.uuid4()}",
             system_message="Você é especialista em design de perfis de Instagram. Crie versões melhoradas de perfis."
         )
-        image_chat.with_model("gemini", "gemini-pro")\
+        image_chat.with_model("gemini", "gemini-1.5-pro")\
             .with_params(modalities=["image", "text"])
         
         image_prompt = f"""Com base neste perfil de Instagram, crie uma versão melhorada com:
@@ -908,7 +908,7 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
                 session_id=f"photoshoot_{user_id}_{uuid.uuid4()}_{i}",
                 system_message="Você é especialista em fotografia profissional e direção de arte. Crie imagens de alta qualidade, únicas e variadas."
             )
-            chat.with_model("gemini", "gemini-pro")\
+            chat.with_model("gemini", "gemini-1.5-pro")\
                 .with_params(modalities=["image", "text"])
             
             # Variar o prompt para cada foto
@@ -969,7 +969,7 @@ async def edit_image(request: dict, user_id: str = Depends(get_current_user)):
             system_message="Você é especialista em edição de imagens. Aplique as modificações solicitadas mantendo a qualidade."
         )
         # Usar modelo Nano Banana para edição de imagens
-        chat.with_model("gemini", "gemini-pro")\
+        chat.with_model("gemini", "gemini-1.5-pro")\
             .with_params(modalities=["image", "text"])
         
         message = UserMessage(
