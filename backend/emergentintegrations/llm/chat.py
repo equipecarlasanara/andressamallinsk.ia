@@ -32,11 +32,7 @@ class LlmChat:
             genai.configure(api_key=self.api_key)
 
     def with_model(self, provider: str, model_name: str):
-        # Map legacy/preview names to stable ones if needed
-        if "gemini-3-flash-preview" in model_name:
-             self.model_name = "gemini-1.5-flash"
-        else:
-             self.model_name = model_name
+        self.model_name = model_name
         return self
 
     async def send_message(self, message: UserMessage) -> str:
@@ -46,34 +42,19 @@ class LlmChat:
             
             for content in message.file_contents:
                 # Assuming simple base64 handling for now
-                # In real Gemini SDK we'd create a Blob
                 if isinstance(content, ImageContent):
-                     # Remove header if present (e.g., data:image/jpeg;base64,)
                      img_data = content.image_base64.split(",")[-1] if "," in content.image_base64 else content.image_base64
                      parts.append({"mime_type": "image/jpeg", "data": base64.b64decode(img_data)})
 
-            # Initialize model with system instruction
             model = genai.GenerativeModel(
                 model_name=self.model_name,
                 system_instruction=self.system_message
             )
             
-            # Start chat (keeping history in memory for this session instance)
-            # Note: A real implementation might persist history based on session_id
             chat = model.start_chat(history=self.history)
-            
             response = await chat.send_message_async(parts)
-            
-            # Update history simple mock
-            # self.history.append(...) # SDK handles history in chat object
             
             return response.text
         except Exception as e:
             print(f"Error sending message to LLM: {e}")
-            if "404" in str(e) or "not found" in str(e).lower():
-                try:
-                    available_models = [m.name for m in genai.list_models()]
-                    return f"Erro 404: Modelo '{self.model_name}' não encontrado. Modelos disponíveis: {', '.join(available_models)}"
-                except:
-                    pass
             return f"Erro ao processar mensagem: {str(e)}"
