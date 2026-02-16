@@ -10,12 +10,7 @@ const getAuthHeaders = () => ({
 });
 
 export default function ProfileAnalysis() {
-  const [beforeImage, setBeforeImage] = useState(null);
-  const [afterImage, setAfterImage] = useState(null);
-  const [analysisText, setAnalysisText] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const fileInputRef = useRef(null);
+  const [visualIdentity, setVisualIdentity] = useState('');
 
   const handleFileChange = async (event) => {
     const file = event.target.files?.[0];
@@ -35,7 +30,11 @@ export default function ProfileAnalysis() {
       try {
         const response = await axios.post(
           `${API}/ai/analyze-profile`,
-          { image: base64String.split(',')[1], mimeType: file.type },
+          {
+            image: base64String.split(',')[1],
+            mimeType: file.type,
+            visualIdentity: visualIdentity
+          },
           getAuthHeaders()
         );
         setAfterImage(response.data.imageUrl);
@@ -68,22 +67,35 @@ export default function ProfileAnalysis() {
       </p>
 
       {!beforeImage && !isLoading && (
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          className="flex flex-col flex-grow items-center justify-center bg-black/30 border-2 border-dashed border-[#3A0A16] rounded-lg p-4 cursor-pointer hover:border-[#53050B]"
-        >
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          <div className="text-center">
-            <p className="mb-4 text-[#CBC8C9]/70">Clique para enviar o print do seu perfil.</p>
-            <button className="px-6 py-2 bg-[#53050B] text-white rounded-lg font-semibold hover:bg-red-800 pointer-events-none">
-              Enviar Print
-            </button>
+        <div className="space-y-6 flex flex-col flex-grow">
+          <div className="bg-black/20 border border-[#3A0A16] p-4 rounded-lg">
+            <label className="block text-[#D4AF37] font-semibold mb-2">Identidade Visual e Posicionamento:</label>
+            <textarea
+              className="w-full bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+              rows="4"
+              placeholder="Ex: Minha paleta é dourado e preto, quero um posicionamento de luxo e autoridade no nicho de mentorias..."
+              value={visualIdentity}
+              onChange={(e) => setVisualIdentity(e.target.value)}
+            />
+          </div>
+
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="flex flex-col flex-grow items-center justify-center bg-black/30 border-2 border-dashed border-[#3A0A16] rounded-lg p-4 cursor-pointer hover:border-[#53050B]"
+          >
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <div className="text-center">
+              <p className="mb-4 text-[#CBC8C9]/70">Agora, clique para enviar o print do seu perfil.</p>
+              <button className="px-6 py-2 bg-[#53050B] text-white rounded-lg font-semibold hover:bg-red-800 pointer-events-none">
+                Enviar Print
+              </button>
+            </div>
           </div>
         </div>
       )}

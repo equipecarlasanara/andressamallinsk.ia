@@ -9,20 +9,25 @@ import ObjectionExterminator from './ObjectionExterminator';
 import ImageEditor from './ImageEditor';
 import SalesFunnel from './SalesFunnel';
 
+import BusinessDiagnosis from './BusinessDiagnosis';
+
 export default function Dashboard({ user, onLogout }) {
   const [activeView, setActiveView] = useState('dashboard');
 
   return (
     <div className="flex h-screen bg-[#19161B] text-[#CBC8C9]" data-testid="dashboard">
-      <Sidebar 
-        activeView={activeView} 
-        setActiveView={setActiveView} 
+      <Sidebar
+        activeView={activeView}
+        setActiveView={setActiveView}
         user={user}
         onLogout={onLogout}
       />
       <main className="flex-1 overflow-hidden">
         <div className={`h-full w-full ${activeView === 'dashboard' ? 'block' : 'hidden'}`}>
           <GoalsDashboard />
+        </div>
+        <div className={`h-full w-full ${activeView === 'diagnostico' ? 'block' : 'hidden'}`}>
+          <BusinessDiagnosis />
         </div>
         <div className={`h-full w-full ${activeView === 'estrategista' ? 'block' : 'hidden'}`}>
           <EstrategistaDigital />
