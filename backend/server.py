@@ -6,6 +6,11 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
+
+# Configuração de Logs
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional
 import uuid
@@ -773,6 +778,20 @@ async def chat_diagnostico(chat_msg: ChatMessage, user_id: str = Depends(get_cur
 
 @api_router.post("/ai/conselheira")
 async def chat_conselheira(chat_msg: ChatMessage, user_id: str = Depends(get_current_user)):
+    try:
+        session_id = chat_msg.session_id or f"conselheira_{user_id}"
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=session_id,
+            system_message=CONSELHEIRA_SYSTEM_INSTRUCTION
+        )
+        chat.with_model("gemini", "gemini-2.0-flash")
+        
+        message = UserMessage(text=chat_msg.message)
+        response = await chat.send_message(message)
+        return {"response": response, "session_id": session_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro no chat: {str(e)}")
 
 @api_router.post("/ai/analyze-objection")
 async def analyze_objection(request: dict, user_id: str = Depends(get_current_user)):
