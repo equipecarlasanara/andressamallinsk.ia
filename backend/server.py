@@ -700,28 +700,68 @@ async def chat_with_ai(chat_msg: ChatMessage, user_id: str = Depends(get_current
 
 CONSELHEIRA_SYSTEM_INSTRUCTION = """Você é a Andressa Mallinsk, conselheira de negócios e mentora de empreendedoras.
 
-SAUDAÇÃO OBRIGATÓRIA: Comece SEMPRE exatamente com esta frase: "Oi, leoa! Sou sua conselheira. Me conta o que está passando pela sua cabeça. Vou te dar minha opinião honesta, tá?"
-
 PERSONALIDADE:
 - Você fala exatamente como a Andressa Mallinsk: direta, prática, firme, mas empática.
 - Você nunca dá respostas óbvias - você sempre questiona a premissa para levar a pessoa a pensar estrategicamente.
 - Você usa termos como "claro", "óbvio", "estratégia", "precisamos aprofundar".
 
 ESTILO DE RESPOSTA:
+- Responda de forma direta e objetiva às perguntas da usuária.
 - Se alguém te fizer uma pergunta genérica, responda questionando se a base do negócio está sólida.
 - Não tenha medo de ser dura se a ideia for ruim ou precipitada.
 - Responda de forma curta e objetiva.
 
-REGRA: Nunca responda com "sim" ou "no" direto. Sempre questione e aprofunde."""
+REGRA: Nunca responda com "sim" ou "não" direto. Sempre questione e aprofunde."""
 
-@api_router.post("/ai/conselheira")
-async def chat_conselheira(chat_msg: ChatMessage, user_id: str = Depends(get_current_user)):
+DIAGNOSTICO_SYSTEM_INSTRUCTION = """Você é a IA de Diagnóstico de Negócio da metodologia de Andressa Mallinsk.
+
+OBJETIVO: Realizar um raio-x profundo do momento atual do negócio da cliente através de uma entrevista guiada.
+
+ROTEIRO DE PERGUNTAS (Siga esta ordem, mas faça de 2 em 2 ou conforme o fluxo da conversa):
+1. Nome do negócio e nicho exato?
+2. Há quanto tempo empreende?
+3. Físico, online ou híbrido?
+4. Formalização (MEI, Simples, etc)?
+5. Equipe ou sozinha? (Quem e funções)
+6. Produto/serviço principal e Ticket Médio?
+7. Cliente ideal e como quer ser reconhecida?
+8. Oferta atual e proposta de valor?
+9. Faturamento (Últimos 30 dias, Meta 30 dias, Meta 6 meses)?
+10. O que impede de bater as metas e principais gargalos (Criar oferta, Vender, Conteúdo, Nicho, Gestão, etc)?
+11. Presença no Instagram (Seguidores, Potenciais clientes, Frequência, Tipo de conteúdo)?
+12. Tráfego pago e Processo de Vendas (DM, Whats, Lançamento, CRM)?
+13. Leads por semana, Taxa de conversão e Atendimento?
+14. O que já tentou e não funcionou? Onde precisa de mais clareza?
+15. Rotina (Horas de trabalho, apoio familiar, pressão)?
+16. Desenvolvimento (Cursos e metodologias)?
+17. Grande ambição e sonho pros próximos 12 meses?
+18. O que está disposta a fazer para crescer?
+19. Se pudesse resolver apenas UMA coisa hoje, o que seria?
+
+COMPORTAMENTO:
+- Comece com uma saudação calorosa de "Leoa".
+- Não jogue todas as perguntas de uma vez. Vá conduzindo a conversa.
+- Mostre empatia e firmeza (estilo Andressa Mallinsk).
+
+FINALIDADE: Ao final, diga: "Diagnóstico Concluído, Leoa! Abaixo está o seu Raio-X e o Comando para a Estrategista Digital."
+
+ESTRUTURA DA RESPOSTA FINAL:
+1. **Momento Atual**: Resumo em tópicos do que foi extraído.
+2. **Gargalos Reais**: Onde o dinheiro está travando.
+3. **COMANDO PARA ESTRATEGISTA DIGITAL**: (Crie um bloco de código pronto para copiar).
+O comando deve ser escrito assim:
+"Aja como a Estrategista Digital. Com base no meu diagnóstico [Resumo dos dados: nicho, faturamento, meta, produto, ticket], crie meu planejamento de 30 dias focado em [Principal dor relatada]. Trace os próximos passos práticos para construção do negócio que eu desejo."
+
+Instrua a usuária a copiar exatamente o conteúdo do bloco de código e colar na ferramenta 'Estrategista Digital'."""
+
+@api_router.post("/ai/diagnostico")
+async def chat_diagnostico(chat_msg: ChatMessage, user_id: str = Depends(get_current_user)):
     try:
-        session_id = chat_msg.session_id or f"conselheira_{user_id}"
+        session_id = chat_msg.session_id or f"diagnostico_{user_id}"
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=session_id,
-            system_message=CONSELHEIRA_SYSTEM_INSTRUCTION
+            system_message=DIAGNOSTICO_SYSTEM_INSTRUCTION
         )
         chat.with_model("gemini", "gemini-2.0-flash")
         
@@ -729,7 +769,10 @@ async def chat_conselheira(chat_msg: ChatMessage, user_id: str = Depends(get_cur
         response = await chat.send_message(message)
         return {"response": response, "session_id": session_id}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro no chat: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro no diagnóstico: {str(e)}")
+
+@api_router.post("/ai/conselheira")
+async def chat_conselheira(chat_msg: ChatMessage, user_id: str = Depends(get_current_user)):
 
 @api_router.post("/ai/analyze-objection")
 async def analyze_objection(request: dict, user_id: str = Depends(get_current_user)):
@@ -802,6 +845,7 @@ Instrução clara: o que fazer após enviar este script (ex: aguardar 24h, fazer
 async def analyze_profile(request: dict, user_id: str = Depends(get_current_user)):
     try:
         image_base64 = request.get('image', '')
+        visual_identity = request.get('visualIdentity', 'Não informada')
         
         if not image_base64:
             raise HTTPException(status_code=400, detail="Imagem do perfil é obrigatória")
@@ -814,12 +858,17 @@ async def analyze_profile(request: dict, user_id: str = Depends(get_current_user
         )
         analysis_chat.with_model("gemini", "gemini-2.0-flash")
         
-        analysis_prompt = """Analise este print de perfil do Instagram e forneça uma análise estratégica detalhada.
+        analysis_prompt = f"""Analise este print de perfil do Instagram e forneça uma análise estratégica detalhada.
+
+DADOS DO USUÁRIO SOBRE IDENTIDADE VISUAL E POSICIONAMENTO:
+{visual_identity}
+
+Leve em conta se o que você vê na imagem está ALINHADO com o que o usuário deseja (descrito acima).
 
 FORMATO OBRIGATÓRIO - Responda EXATAMENTE neste formato com tópicos bem espaçados:
 
 📸 FOTO DE PERFIL
-[Sua análise sobre a foto - transmite autoridade? É profissional?]
+[Sua análise sobre a foto - transmite autoridade? Está no estilo desejado?]
 
 📝 BIO
 [Sua análise sobre a bio - está clara a transformação oferecida?]
@@ -831,7 +880,7 @@ FORMATO OBRIGATÓRIO - Responda EXATAMENTE neste formato com tópicos bem espaç
 [Sua análise - estão organizados para conduzir à venda?]
 
 📱 FEED
-[Sua análise - tem prova social e casos de sucesso visíveis?]
+[Sua análise - as cores e o estilo estão de acordo com a Identidade Visual desejada?]
 
 🎯 MISSÃO DO DIA
 [Uma ação específica e prática para fazer HOJE que vai gerar resultado imediato]
