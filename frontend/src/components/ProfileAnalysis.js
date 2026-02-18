@@ -10,7 +10,13 @@ const getAuthHeaders = () => ({
 });
 
 export default function ProfileAnalysis() {
+  const [beforeImage, setBeforeImage] = useState(null);
+  const [afterImage, setAfterImage] = useState(null);
+  const [analysisText, setAnalysisText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [visualIdentity, setVisualIdentity] = useState('');
+  const fileInputRef = useRef(null);
 
   const handleFileChange = async (event) => {
     const file = event.target.files?.[0];
