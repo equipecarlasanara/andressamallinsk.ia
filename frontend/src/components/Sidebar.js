@@ -1,11 +1,16 @@
-import { Target, BookOpen, Brain, LogOut, User, Camera, Shield, Edit3, TrendingUp } from 'lucide-react';
+import { Target, BookOpen, Brain, LogOut, User, Camera, Shield, Edit3, TrendingUp, FileText } from 'lucide-react';
 
 export default function Sidebar({ activeView, setActiveView, user, onLogout }) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard de Metas', icon: Target },
-    { id: 'diagnostico', label: 'Diagnóstico de Negócio', icon: BookOpen },
+    { id: 'diagnostico', label: 'Diagnóstico de Negócio', icon: FileText },
     { id: 'estrategista', label: 'Estrategista Digital', icon: Brain },
     { id: 'analise', label: 'Análise de Perfil', icon: User },
+    { id: 'ensaio', label: 'Criar Ensaio Fotográfico', icon: Camera },
+    { id: 'biblioteca', label: 'Biblioteca de Conteúdo', icon: BookOpen },
+    { id: 'objecao', label: 'Exterminador de Objeção', icon: Shield },
+    { id: 'funil', label: 'Funil de Vendas', icon: TrendingUp },
+    { id: 'editor', label: 'Editor Nano Banana', icon: Edit3 },
   ];
 
   return (
@@ -34,8 +39,8 @@ export default function Sidebar({ activeView, setActiveView, user, onLogout }) {
               key={item.id}
               onClick={() => setActiveView(item.id)}
               className={`flex items-center p-3 rounded-lg transition-colors duration-200 ${isActive
-                  ? 'bg-[#3A0A16] text-white'
-                  : 'text-[#CBC8C9]/80 hover:bg-[#3A0A16]/50 hover:text-white'
+                ? 'bg-[#3A0A16] text-white'
+                : 'text-[#CBC8C9]/80 hover:bg-[#3A0A16]/50 hover:text-white'
                 }`}
               data-testid={`nav-${item.id}`}
             >
