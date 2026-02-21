@@ -29,21 +29,21 @@ class D1Client:
         client = self.get_client()
         payload = {"sql": sql, "params": params or []}
         response = await client.post(self.base_url, headers=self.headers, json=payload)
-            
-            if response.status_code != 200:
-                logger.error(f"Erro na D1 API: {response.text}")
-                raise Exception(f"D1 API Error: {response.status_code}")
-            
-            data = response.json()
-            if not data.get("success"):
-                logger.error(f"D1 Query Failed: {data.get('errors')}")
-                raise Exception(f"D1 Query Failed: {data.get('errors')}")
-            
-            # O D1 retorna resultados em data['result'][0]['results']
-            results = data.get("result", [])
-            if results and "results" in results[0]:
-                return results[0]["results"]
-            return []
+        
+        if response.status_code != 200:
+            logger.error(f"Erro na D1 API: {response.text}")
+            raise Exception(f"D1 API Error: {response.status_code}")
+        
+        data = response.json()
+        if not data.get("success"):
+            logger.error(f"D1 Query Failed: {data.get('errors')}")
+            raise Exception(f"D1 Query Failed: {data.get('errors')}")
+        
+        # O D1 retorna resultados em data['result'][0]['results']
+        results = data.get("result", [])
+        if results and "results" in results[0]:
+            return results[0]["results"]
+        return []
 
     async def insert_one(self, table: str, data: Dict[str, Any]):
         columns = ", ".join(data.keys())

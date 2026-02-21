@@ -26,18 +26,23 @@ import base64
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# Configuração Banco de Dados (Cloudflare D1)
-if os.environ.get('DB_TYPE') == 'cloudflare_d1':
+# Configuração Banco de Dados (Cloudflare D1 / MongoDB)
+# Se DB_TYPE=cloudflare_d1 e as chaves existirem, usa D1. Caso contrário, fallback para Mongo.
+db_type = os.environ.get('DB_TYPE')
+cf_account = os.environ.get('CLOUDFLARE_ACCOUNT_ID')
+
+if db_type == 'cloudflare_d1' and cf_account:
     db = D1Client()
 else:
-    # Fallback para Mongo se ainda não configurado (para não quebrar local imediato)
+    # Fallback para Mongo (Vital enquanto Cloudflare não está conectada)
     from motor.motor_asyncio import AsyncIOMotorClient
-    mongo_url = os.environ.get('MONGO_URL', '')
+    mongo_url = os.environ.get('MONGO_URL')
     if mongo_url:
         client = AsyncIOMotorClient(mongo_url)
         db = client[os.environ.get('DB_NAME', 'estrategista')]
     else:
-        db = D1Client() # Default para D1 se nada for informado
+        # Se nada existir, usa D1 como placeholder para não crashar o boot
+        db = D1Client() 
 
 app = FastAPI()
 
@@ -912,28 +917,27 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
                 chat = LlmChat(
                     api_key=EMERGENT_LLM_KEY,
                     session_id=f"photoshoot_{user_id}_{uuid.uuid4()}_{index}",
-                    system_message="Você é especialista em fotografia de elite e preservação de identidade. Sua missão é gerar FOTOS ÚNICAS e REAIS."
+                    system_message="Você é uma câmera profissional de alta performance. Sua única função é gerar UMA FOTO ÚNICA, REALISTA e FIÉL."
                 )
                 chat.with_model("gemini", "gemini-3-pro-image-preview")\
                     .with_params(modalities=["image", "text"])
                 
+                # Variações sutis de posição, evitando palavras que induzam a colagens
                 variations = [
-                    "close-up elegante", "plano médio", "plano americano", 
-                    "perfil lateral", "olhando para câmera", "sentada em movimento",
-                    "caminhando naturalmente", "expressão de autoridade",
-                    "estilo editorial de moda", "foco no olhar"
+                    "corpo inteiro", "plano de retrato", "fotografia de moda", 
+                    "expressão de poder", "fundo desfocado"
                 ]
                 variation = variations[index % len(variations)]
                 
-                # REGRAS DE OURO (INNEGOCIÁVEIS)
-                rules = [
-                    "PERFEITA FIDELIDADE: O rosto deve ser EXATAMENTE o da foto de referência. Não altere traços nem expressão base.",
-                    "FOTO ÚNICA: Proibido gerar colagens, mosaicos ou múltiplas poses em uma mesma imagem.",
-                    "FRAME LIMPO: Gere apenas 1 (uma) pose por arquivo de imagem.",
-                    "QUALIDADE: 8k, iluminação profissional, profundidade de campo cinematográfica."
+                # INSTRUÇÕES DE BLINDAGEM (Nível Militar)
+                strict_rules = [
+                    "PROIBIDO COLAGENS: Gere apenas 1 frame. Proibido grid, mosaico ou múltiplas poses.",
+                    "FIDELIDADE FACIAL: Use o rosto da imagem de referência de forma idêntica. Não modifique traços faciais.",
+                    "FOTO LIMPA: Apenas uma pessoa, uma cena, uma foto. Sem divisões de tela.",
+                    "ESTILO: Fotografia profissional editorial, 8k, iluminação natural de NY."
                 ]
                 
-                full_prompt = f"{' | '.join(rules)}\nCenário/Ação: {prompt}. Estilo: {variation}."
+                full_prompt = f"### REGRAS: {' | '.join(strict_rules)}\n### COMANDO: Crie uma foto profissional baseada na referência. Descrição: {prompt}. Estilo: {variation}."
                 
                 if base_image and base_image.get('base64'):
                     message = UserMessage(
