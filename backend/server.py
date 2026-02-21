@@ -2,7 +2,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
+from d1_client import D1Client
 import os
 import logging
 import re
@@ -26,9 +26,18 @@ import base64
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# Configuração Banco de Dados (Cloudflare D1)
+if os.environ.get('DB_TYPE') == 'cloudflare_d1':
+    db = D1Client()
+else:
+    # Fallback para Mongo se ainda não configurado (para não quebrar local imediato)
+    from motor.motor_asyncio import AsyncIOMotorClient
+    mongo_url = os.environ.get('MONGO_URL', '')
+    if mongo_url:
+        client = AsyncIOMotorClient(mongo_url)
+        db = client[os.environ.get('DB_NAME', 'estrategista')]
+    else:
+        db = D1Client() # Default para D1 se nada for informado
 
 app = FastAPI()
 
@@ -649,31 +658,26 @@ Use a voz firme, direta e prática da "Estrategista"."""
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao gerar conteúdo: {str(e)}")
 
-ESTRATEGISTA_SYSTEM_INSTRUCTION = """Você é a "Estrategista Digital", mentorada por ANDRESSA MALLINSK. Seu cérebro é estratégico, direto e focado em lucro. Você NÃO é um chatbot comum; você é uma mentora de elite.
+ESTRATEGISTA_SYSTEM_INSTRUCTION = """Você é a "Estrategista Digital", mentorada por ANDRESSA MALLINSK. Seu cérebro é estratégico, curto, grosso quando necessário e 100% focado em lucro.
 
-COMPORTAMENTO OBRIGATÓRIO:
-- **ZERO ENROLAÇÃO**: Não repita saudações. Se a Leoa já deu "Oi", não responda com "Olá Leoa! Seja bem-vinda". Vá direto para o assunto.
-- **MEMÓRIA DE ELITE**: Verifique SEMPRE o histórico. Se a pergunta 1 (Nome/Nicho) já foi respondida, pule para a 2. NUNCA peça uma informação que já foi dada.
-- **VOZ DA ANDRESSA**: Firme, curta, grossa quando necessário, e 100% prática.
+COMPORTAMENTO DE ELITE (PROIBIDO ROBOTISMO):
+1. **ZERO SAUDAÇÕES**: Se o papo já começou, não diga "Olá", "Tudo bem" ou "Seja bem-vinda". Vá direto para a próxima pergunta ou conselho.
+2. **NÃO SEJA CHATBOT**: Não use frases padrão como "Entendo seu ponto", "Que interessante". Aja como uma mentora real que não tem tempo a perder.
+3. **MEMÓRIA DE FERRO**: Se a Leoa já deu o nome, não pergunte de novo. Se já respondeu o nicho, pule. Analise o histórico e pergunte APENAS o que falta.
 
 FLUXO DO RAIO-X (40 PONTOS):
-1. Verifique onde a conversa parou. Analise a última resposta da Leoa.
-2. Se o diagnóstico ainda não acabou: Faça APENAS A PRÓXIMA PERGUNTA. Sem introduções tipo "Vamos continuar nosso raio-x...". Apenas a pergunta.
-3. Se a Leoa der uma resposta que cubra várias perguntas, valide o que recebeu e peça a próxima informação faltante.
+- Faça UMA pergunta por vez. Curta e seca.
+- Se a resposta da Leoa for completa, pule os itens correspondentes e vá para o próximo gargalo.
+- Lista de Referência: 1-10 (Fundação), 11-14 (Financeiro), 15-25 (Venda/Insta), 26-40 (Mentalidade/Gargalos).
 
-LISTA DE REFERÊNCIA (RAIO-X):
-1. Nome/Nicho | 2. Tempo de negócio | 3. Modelo (Online/Físico/Híbrido) | 4. Formalização | 5. Equipe | 6. Produto Principal | 7. Ticket Médio | 8. Cliente Ideal | 9. Reconhecimento | 10. Oferta/Mensagem | 11-13. Faturamento/Metas | 14. Impedimentos | 15-16. Instagram/Seguidores | 17-19. Conteúdo/Tráfego | 20-25. Vendas/Funil/CRM/Conversão/Atendimento | 26-29. Gargalos/Travas/Clareza | 30-33. Rotina/Pressão/Estudos | 34-37. Ambição/Sonhos/Disposição | 38-40. Foco Único e Expectativas.
-
-RESUMO FINAL (OBRIGATÓRIO AO FIM DAS PERGUNTAS):
-Quando concluir a coleta, envie EXATAMENTE este bloco:
+RESUMO E GATILHO:
+Ao concluir, envie exatamente:
 "DIAGNÓSTICO CONCLUÍDO!
-Então (Nome), seu negócio é (Nicho/Modelo) e hoje seu cenário atual é (Resumo estratégico do cenário). Você deseja chegar nesse resultado (Meta) em (Prazo).
+Então (Nome), seu negócio é (Nicho/Modelo) e hoje seu cenário atual é (Resumo direto). Você deseja chegar em (Meta) em (Prazo).
 
 Agora sim, de acordo com seu diagnóstico me diga você deseja um conselho ou a ação que fará você chegar nesse resultaod?"
 
-AÇÕES PÓS-RESUMO:
-- Se pedir "Plano de 30 dias": Gere o plano técnico usando PROJETAR_TAREFA: [Título] | [Descrição].
-- Se pedir "Conselho": Dê um soco de realidade estratégica baseado no diagnóstico.
+VOZ: Andressa Mallinsk pura. Sem enrolação. Sem robô.
 """
 
 @api_router.post("/ai/chat")
@@ -898,62 +902,69 @@ Crie a imagem do perfil melhorado."""
 @api_router.post("/ai/generate-photoshoot")
 async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_user)):
     try:
+        import asyncio
         prompt = request.get('prompt', '')
         base_image = request.get('baseImage')
-        num_images = min(request.get('numImages', 10), 10)  # Máximo 10 por requisição
+        num_images = min(request.get('numImages', 10), 10)
         
-        generated_images = []
-        
-        for i in range(num_images):
-            chat = LlmChat(
-                api_key=EMERGENT_LLM_KEY,
-                session_id=f"photoshoot_{user_id}_{uuid.uuid4()}_{i}",
-                system_message="Você é especialista em fotografia profissional e direção de arte. Crie imagens de alta qualidade, únicas e variadas."
-            )
-            chat.with_model("gemini", "gemini-3-pro-image-preview")\
-                .with_params(modalities=["image", "text"])
-            
-            # Variar o prompt para cada foto
-            variations = [
-                "close-up elegante", "plano médio", "plano americano", 
-                "perfil lateral", "olhando para câmera", "olhando para longe",
-                "sorrindo naturalmente", "expressão séria e confiante",
-                "com movimento", "pose clássica"
-            ]
-            variation = variations[i % len(variations)]
-            
-            full_prompt = f"Crie uma foto de ensaio fotográfico profissional #{i+1}: {prompt}. Estilo: {variation}. A imagem deve ser de alta qualidade, bem iluminada e com composição profissional."
-            
-            if base_image and base_image.get('base64'):
-                message = UserMessage(
-                    text=f"Use esta foto como referência da pessoa e {full_prompt}",
-                    file_contents=[ImageContent(base_image['base64'])]
-                )
-            else:
-                message = UserMessage(text=full_prompt)
-            
+        async def generate_single_photo(index):
             try:
+                # Criar uma sessão única para cada foto para evitar conflitos
+                chat = LlmChat(
+                    api_key=EMERGENT_LLM_KEY,
+                    session_id=f"photoshoot_{user_id}_{uuid.uuid4()}_{index}",
+                    system_message="Você é especialista em fotografia de elite e direção de arte. Sua missão é criar imagens de altíssima qualidade mantendo a identidade da pessoa."
+                )
+                chat.with_model("gemini", "gemini-3-pro-image-preview")\
+                    .with_params(modalities=["image", "text"])
+                
+                variations = [
+                    "close-up elegante", "plano médio", "plano americano", 
+                    "perfil lateral", "olhando para câmera", "sentada em movimento",
+                    "caminhando naturalmente", "expressão de autoridade",
+                    "estilo editorial de moda", "foco no olhar"
+                ]
+                variation = variations[index % len(variations)]
+                
+                # Instrução CRÍTICA para preservar identidade
+                preservation = "IMPORTANTE: NÃO ALTERE O ROSTO NEM O CABELO DA PESSOA. Mantenha a identidade 100% fiel."
+                
+                full_prompt = f"{preservation}\nCenário/Ação: {prompt}. Estilo da Foto: {variation}."
+                
+                if base_image and base_image.get('base64'):
+                    message = UserMessage(
+                        text=full_prompt,
+                        file_contents=[ImageContent(base_image['base64'])]
+                    )
+                else:
+                    message = UserMessage(text=full_prompt)
+                
+                # Chamada com timeout expandido para geração de imagem
                 text_response, images = await chat.send_message_multimodal_response(message)
                 if images and len(images) > 0:
-                    generated_images.append({
-                        "id": i + 1,
+                    return {
+                        "id": index + 1,
                         "imageUrl": f"data:{images[0]['mime_type']};base64,{images[0]['data']}"
-                    })
-                    logger.info(f"Foto {i+1}/{num_images} gerada para usuário {user_id}")
-            except Exception as img_error:
-                logger.warning(f"Erro ao gerar foto {i+1}: {str(img_error)}")
-                continue
+                    }
+            except Exception as e:
+                logger.error(f"Erro ao gerar foto {index}: {str(e)}")
+                return None
+
+        # Gerar todas as fotos em paralelo
+        tasks = [generate_single_photo(i) for i in range(num_images)]
+        results = await asyncio.gather(*tasks)
         
-        if len(generated_images) == 0:
-            raise HTTPException(status_code=500, detail="Não foi possível gerar nenhuma imagem. Tente novamente.")
+        generated_images = [r for r in results if r is not None]
         
-        return {"images": generated_images, "total": len(generated_images)}
+        if not generated_images:
+            raise HTTPException(status_code=500, detail="A IA está sobrecarregada ou não conseguiu processar as fotos agora. Tente novamente com menos fotos ou um prompt mais simples.")
             
+        return {"images": generated_images, "total": len(generated_images)}
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Erro ao gerar ensaio: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Erro ao gerar ensaio: {str(e)}")
+        logger.error(f"Erro fatal no ensaio: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/ai/edit-image")
 async def edit_image(request: dict, user_id: str = Depends(get_current_user)):
@@ -995,7 +1006,3 @@ async def edit_image(request: dict, user_id: str = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=f"Erro ao editar imagem: {str(e)}")
 
 app.include_router(api_router)
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
