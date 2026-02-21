@@ -13,7 +13,7 @@ const getAuthHeaders = () => ({
 
 const initialMessage = {
   role: 'assistant',
-  content: 'Olá leoa, sou a Estrategista Digital, e para iniciarmos preciso conhecer você e seu negócio.'
+  content: 'Olá leoa! Para começarmos sua mentoria agora, vamos ao nosso Raio-X estratégico.\n\n1. Qual o seu nome e nicho exato?'
 };
 
 export default function EstrategistaDigital() {
@@ -89,10 +89,10 @@ export default function EstrategistaDigital() {
   };
 
   const lastMessage = messages[messages.length - 1];
+  // Só mostrar opções se a IA finalizar o Raio-X e apresentar o comando/resumo
   const showOptions = !isLoading && lastMessage?.role === 'assistant' && (
-    lastMessage.content.toLowerCase().includes('comando') ||
-    lastMessage.content.toLowerCase().includes('raio-x') ||
-    messages.length > 10 // Sugestão baseada no fôlego da conversa
+    lastMessage.content.includes('deseja um conselho ou a ação') ||
+    lastMessage.content.includes('DIAGNÓSTICO CONCLUÍDO')
   );
 
   return (
