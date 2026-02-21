@@ -2,15 +2,15 @@ import { Target, BookOpen, Brain, LogOut, User, Camera, Shield, Edit3, TrendingU
 
 export default function Sidebar({ activeView, setActiveView, user, onLogout }) {
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard de Metas', icon: Target },
-    { id: 'diagnostico', label: 'Diagnóstico de Negócio', icon: FileText },
     { id: 'estrategista', label: 'Estrategista Digital', icon: Brain },
+    { id: 'dashboard', label: 'Dashboard de Metas', icon: Target },
+    { id: 'prompts', label: 'Biblioteca de Prompts', icon: FileText },
     { id: 'analise', label: 'Análise de Perfil', icon: User },
     { id: 'ensaio', label: 'Criar Ensaio Fotográfico', icon: Camera },
     { id: 'biblioteca', label: 'Biblioteca de Conteúdo', icon: BookOpen },
     { id: 'objecao', label: 'Exterminador de Objeção', icon: Shield },
     { id: 'funil', label: 'Funil de Vendas', icon: TrendingUp },
-    { id: 'editor', label: 'Editor Nano Banana', icon: Edit3 },
+    { id: 'editor', label: 'Editor de Fotos', icon: Edit3 },
   ];
 
   return (

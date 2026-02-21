@@ -13,7 +13,7 @@ const getAuthHeaders = () => ({
 
 const initialMessage = {
   role: 'assistant',
-  content: 'Olá! Sou a Estrategista Digital, sua mentora de negócios. Estou aqui para ajudá-la a estruturar e escalar seu negócio com foco em resultados financeiros. Como posso ajudar você hoje?'
+  content: 'Olá leoa, sou a Estrategista Digital, e para iniciarmos preciso conhecer você e seu negócio.'
 };
 
 export default function EstrategistaDigital() {
@@ -52,30 +52,25 @@ export default function EstrategistaDigital() {
   }, [messages]);
 
   const handleClearHistory = () => {
-    if (window.confirm('Limpar todo o histórico de conversas?')) {
+    if (window.confirm('Deseja iniciar um novo ciclo estratégico? Isso apagará a conversa atual.')) {
       setMessages([initialMessage]);
       localStorage.removeItem(STORAGE_KEY);
     }
   };
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!inputMessage.trim() || isLoading) return;
+  const handleSendMessage = async (textOverride = null) => {
+    const textToSend = textOverride || inputMessage.trim();
+    if (!textToSend || isLoading) return;
 
-    const userMessage = inputMessage.trim();
     setInputMessage('');
-    const newMessages = [...messages, { role: 'user', content: userMessage }];
+    const newMessages = [...messages, { role: 'user', content: textToSend }];
     setMessages(newMessages);
     setIsLoading(true);
 
     try {
-      // Enviar apenas últimas N mensagens para economizar tokens
-      const recentMessages = newMessages.slice(-MAX_MESSAGES_TO_AI);
-      const contextMessage = recentMessages.map(m => `${m.role}: ${m.content}`).join('\n');
-      
       const response = await axios.post(
         `${API}/ai/chat`,
-        { message: userMessage, session_id: sessionId, context: contextMessage },
+        { message: textToSend, session_id: sessionId },
         getAuthHeaders()
       );
       setMessages((prev) => [
@@ -86,62 +81,89 @@ export default function EstrategistaDigital() {
       console.error('Erro no chat:', err);
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: 'Desculpe, ocorreu um erro. Tente novamente.' }
+        { role: 'assistant', content: 'Ops, tive um problema técnico. Pode repetir a última mensagem, Leoa?' }
       ]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const lastMessage = messages[messages.length - 1];
+  const showOptions = !isLoading && lastMessage?.role === 'assistant' && (
+    lastMessage.content.toLowerCase().includes('comando') ||
+    lastMessage.content.toLowerCase().includes('raio-x') ||
+    messages.length > 10 // Sugestão baseada no fôlego da conversa
+  );
+
   return (
-    <div className="h-full flex flex-col" data-testid="estrategista-digital">
-      <div className="border-b border-[#3A0A16] p-6 flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-title text-[#CBC8C9]" data-testid="chat-title">
-            Estrategista Digital
-          </h1>
-          <p className="text-sm text-[#CBC8C9]/70 mt-2">
-            Sua mentora de negócios impulsionada por IA
-          </p>
+    <div className="h-full flex flex-col bg-[#19161B]" data-testid="estrategista-digital">
+      <div className="border-b border-[#3A0A16] p-6 flex justify-between items-center bg-black/20">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-[#D4AF37] rounded-full flex items-center justify-center shadow-lg shadow-[#D4AF37]/20">
+            <span className="text-black font-bold text-xl">L</span>
+          </div>
+          <div>
+            <h1 className="text-2xl font-title text-[#CBC8C9]" data-testid="chat-title">
+              Estrategista Digital
+            </h1>
+            <p className="text-xs text-[#D4AF37] font-medium tracking-widest uppercase">
+              Método Andressa Mallinsk
+            </p>
+          </div>
         </div>
-        {messages.length > 1 && (
-          <button
-            onClick={handleClearHistory}
-            className="text-[#CBC8C9]/50 hover:text-red-400 p-2 rounded transition-colors"
-            title="Limpar histórico"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
-        )}
+        <button
+          onClick={handleClearHistory}
+          className="text-[#CBC8C9]/30 hover:text-red-400 p-2 border border-white/5 rounded-full transition-all"
+          title="Reiniciar Ciclo"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-4" data-testid="chat-messages">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide" data-testid="chat-messages">
         {messages.map((message, index) => (
           <div
             key={index}
-            className={`flex ${
-              message.role === 'user' ? 'justify-end' : 'justify-start'
-            }`}
+            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             data-testid={`message-${index}`}
           >
             <div
-              className={`max-w-[70%] rounded-lg p-4 ${
-                message.role === 'user'
-                  ? 'bg-[#53050B] text-white'
-                  : 'bg-black/30 border border-[#3A0A16] text-[#CBC8C9]'
-              }`}
+              className={`max-w-[85%] rounded-2xl p-5 shadow-xl ${message.role === 'user'
+                ? 'bg-[#53050B] text-white rounded-tr-none'
+                : 'bg-[#2A262D] border border-[#3A0A16] text-[#CBC8C9] rounded-tl-none font-light'
+                }`}
             >
-              <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+              <p className="whitespace-pre-wrap leading-relaxed text-[15px]">{message.content}</p>
             </div>
           </div>
         ))}
+
+        {showOptions && (
+          <div className="flex flex-col gap-3 mt-4 animate-in fade-in slide-in-from-bottom-2">
+            <button
+              onClick={() => handleSendMessage("Crie meu plano de ação de 30 dias para eu chegar ao meu faturamento ideal.")}
+              className="bg-[#D4AF37] hover:bg-[#B8962E] text-black font-bold py-3 px-6 rounded-xl transition-all text-left flex justify-between items-center"
+            >
+              🚀 Criar meu Plano de Ações (30 dias)
+              <span className="text-xs opacity-50">→</span>
+            </button>
+            <button
+              onClick={() => handleSendMessage("Preciso de um conselho estratégico sobre um desafio atual.")}
+              className="bg-transparent border border-[#3A0A16] hover:bg-[#3A0A16] text-[#CBC8C9] font-medium py-3 px-6 rounded-xl transition-all text-left flex justify-between items-center"
+            >
+              💡 Pedir um conselho
+              <span className="text-xs opacity-50">→</span>
+            </button>
+          </div>
+        )}
+
         {isLoading && (
-          <div className="flex justify-start" data-testid="loading-indicator">
-            <div className="max-w-[70%] rounded-lg p-4 bg-black/30 border border-[#3A0A16]">
+          <div className="flex justify-start">
+            <div className="bg-[#2A262D] border border-[#3A0A16] rounded-2xl p-5 rounded-tl-none">
               <div className="flex space-x-2">
-                <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-pulse delay-75"></div>
+                <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-pulse delay-150"></div>
               </div>
             </div>
           </div>
@@ -149,26 +171,29 @@ export default function EstrategistaDigital() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="border-t border-[#3A0A16] p-4" style={{ paddingBottom: '60px' }}>
-        <form onSubmit={handleSendMessage} className="flex gap-3">
+      <div className="p-6 bg-gradient-to-t from-black to-transparent">
+        <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="relative group">
           <input
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Digite sua mensagem..."
-            className="flex-1 bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:outline-none focus:ring-2 focus:ring-[#53050B]"
+            placeholder="Digite aqui, Leoa..."
+            className="w-full bg-[#2A262D] border border-[#3A0A16] rounded-2xl p-5 pr-14 text-[#CBC8C9] focus:outline-none focus:border-[#D4AF37]/50 focus:ring-1 focus:ring-[#D4AF37]/20 transition-all placeholder:text-white/20 shadow-2xl"
             disabled={isLoading}
             data-testid="chat-input"
           />
           <button
             type="submit"
             disabled={isLoading || !inputMessage.trim()}
-            className="bg-[#53050B] hover:bg-red-800 text-white px-6 py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#53050B] hover:bg-red-800 text-white p-3 rounded-xl transition-all disabled:opacity-30 flex items-center shadow-lg"
             data-testid="send-message-button"
           >
             <Send className="w-5 h-5" />
           </button>
         </form>
+        <p className="text-[10px] text-center mt-3 text-[#CBC8C9]/30 tracking-widest uppercase">
+          Estrategista Digital • 100% On-line
+        </p>
       </div>
     </div>
   );

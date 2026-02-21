@@ -4,7 +4,7 @@ import { Send, Heart, X, Minimize2, Trash2 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
-const STORAGE_KEY = 'conselheira_chat_history';
+const STORAGE_KEY = 'estrategista_float_history';
 const MAX_MESSAGES_TO_AI = 10;
 
 const getAuthHeaders = () => ({
@@ -13,7 +13,7 @@ const getAuthHeaders = () => ({
 
 const initialMessage = {
   role: 'assistant',
-  content: 'Oi, leoa! Sou sua conselheira. Me conta o que está passando pela sua cabeça. Vou te dar minha opinião honesta, tá?'
+  content: 'Olá leoa, como posso te ajudar hoje? Já fez sua tarefa diária?'
 };
 
 export default function ConselheiraFloat() {
@@ -122,7 +122,7 @@ export default function ConselheiraFloat() {
       <div className="flex items-center justify-between p-3 border-b border-[#3A0A16] bg-black/50 rounded-t-lg">
         <div className="flex items-center gap-2">
           <Heart className="w-5 h-5 text-[#D4AF37]" />
-          <span className="font-semibold text-[#CBC8C9]">A Conselheira</span>
+          <span className="font-semibold text-[#CBC8C9]">A Estrategista</span>
         </div>
         <div className="flex items-center gap-1">
           {messages.length > 1 && (
@@ -147,8 +147,8 @@ export default function ConselheiraFloat() {
           >
             <div
               className={`max-w-[85%] rounded-lg p-3 text-sm ${message.role === 'user'
-                  ? 'bg-[#53050B] text-white'
-                  : 'bg-black/30 border border-[#D4AF37]/30 text-[#CBC8C9]'
+                ? 'bg-[#53050B] text-white'
+                : 'bg-black/30 border border-[#D4AF37]/30 text-[#CBC8C9]'
                 }`}
             >
               <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
