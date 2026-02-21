@@ -13,7 +13,7 @@ const getAuthHeaders = () => ({
 
 const initialMessage = {
   role: 'assistant',
-  content: 'Olá leoa, como posso te ajudar hoje? Já fez sua tarefa diária?'
+  content: 'Olá leoa, como posso te ajudar com a sua estratégia agora?'
 };
 
 export default function ConselheiraFloat() {
