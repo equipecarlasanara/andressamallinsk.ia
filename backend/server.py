@@ -909,11 +909,10 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
         
         async def generate_single_photo(index):
             try:
-                # Criar uma sessão única para cada foto para evitar conflitos
                 chat = LlmChat(
                     api_key=EMERGENT_LLM_KEY,
                     session_id=f"photoshoot_{user_id}_{uuid.uuid4()}_{index}",
-                    system_message="Você é especialista em fotografia de elite e direção de arte. Sua missão é criar imagens de altíssima qualidade mantendo a identidade da pessoa."
+                    system_message="Você é especialista em fotografia de elite e preservação de identidade. Sua missão é gerar FOTOS ÚNICAS e REAIS."
                 )
                 chat.with_model("gemini", "gemini-3-pro-image-preview")\
                     .with_params(modalities=["image", "text"])
@@ -926,10 +925,15 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
                 ]
                 variation = variations[index % len(variations)]
                 
-                # Instrução CRÍTICA para preservar identidade
-                preservation = "IMPORTANTE: NÃO ALTERE O ROSTO NEM O CABELO DA PESSOA. Mantenha a identidade 100% fiel."
+                # REGRAS DE OURO (INNEGOCIÁVEIS)
+                rules = [
+                    "PERFEITA FIDELIDADE: O rosto deve ser EXATAMENTE o da foto de referência. Não altere traços nem expressão base.",
+                    "FOTO ÚNICA: Proibido gerar colagens, mosaicos ou múltiplas poses em uma mesma imagem.",
+                    "FRAME LIMPO: Gere apenas 1 (uma) pose por arquivo de imagem.",
+                    "QUALIDADE: 8k, iluminação profissional, profundidade de campo cinematográfica."
+                ]
                 
-                full_prompt = f"{preservation}\nCenário/Ação: {prompt}. Estilo da Foto: {variation}."
+                full_prompt = f"{' | '.join(rules)}\nCenário/Ação: {prompt}. Estilo: {variation}."
                 
                 if base_image and base_image.get('base64'):
                     message = UserMessage(
@@ -939,7 +943,6 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
                 else:
                     message = UserMessage(text=full_prompt)
                 
-                # Chamada com timeout expandido para geração de imagem
                 text_response, images = await chat.send_message_multimodal_response(message)
                 if images and len(images) > 0:
                     return {
@@ -947,23 +950,19 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
                         "imageUrl": f"data:{images[0]['mime_type']};base64,{images[0]['data']}"
                     }
             except Exception as e:
-                logger.error(f"Erro ao gerar foto {index}: {str(e)}")
+                logger.error(f"Erro na foto {index}: {str(e)}")
                 return None
 
-        # Gerar todas as fotos em paralelo
         tasks = [generate_single_photo(i) for i in range(num_images)]
         results = await asyncio.gather(*tasks)
-        
         generated_images = [r for r in results if r is not None]
         
         if not generated_images:
-            raise HTTPException(status_code=500, detail="A IA está sobrecarregada ou não conseguiu processar as fotos agora. Tente novamente com menos fotos ou um prompt mais simples.")
+            raise HTTPException(status_code=500, detail="A IA falhou em processar com a fidelidade exigida. Tente um prompt mais específico.")
             
         return {"images": generated_images, "total": len(generated_images)}
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.error(f"Erro fatal no ensaio: {str(e)}")
+        logger.error(f"Erro fatal: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/ai/edit-image")
