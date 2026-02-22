@@ -917,27 +917,28 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
                 chat = LlmChat(
                     api_key=EMERGENT_LLM_KEY,
                     session_id=f"photoshoot_{user_id}_{uuid.uuid4()}_{index}",
-                    system_message="Você é uma câmera profissional de alta performance. Sua única função é gerar UMA FOTO ÚNICA, REALISTA e FIÉL."
+                    system_message="Você é um fotógrafo profissional de altíssima performance. Sua única função é capturar UMA FOTO ÚNICA, REALISTA e FIÉL à pessoa na referência."
                 )
                 chat.with_model("gemini", "gemini-3-pro-image-preview")\
                     .with_params(modalities=["image", "text"])
                 
-                # Variações sutis de posição, evitando palavras que induzam a colagens
-                variations = [
-                    "corpo inteiro", "plano de retrato", "fotografia de moda", 
-                    "expressão de poder", "fundo desfocado"
+                # Variações de estilo, garantindo frame único
+                styles = [
+                    "fotografia editorial, close-up, foco nítido no rosto",
+                    "plano americano, iluminação profissional de estúdio",
+                    "estrato cinematográfico, luz natural, 8k",
+                    "retrato corporativo de alto luxo, fundo desfocado",
+                    "fotografia de moda, luz de ouro, nitidez absoluta"
                 ]
-                variation = variations[index % len(variations)]
+                style = styles[index % len(styles)]
                 
-                # INSTRUÇÕES DE BLINDAGEM (Nível Militar)
-                strict_rules = [
-                    "PROIBIDO COLAGENS: Gere apenas 1 frame. Proibido grid, mosaico ou múltiplas poses.",
-                    "FIDELIDADE FACIAL: Use o rosto da imagem de referência de forma idêntica. Não modifique traços faciais.",
-                    "FOTO LIMPA: Apenas uma pessoa, uma cena, uma foto. Sem divisões de tela.",
-                    "ESTILO: Fotografia profissional editorial, 8k, iluminação natural de NY."
-                ]
-                
-                full_prompt = f"### REGRAS: {' | '.join(strict_rules)}\n### COMANDO: Crie uma foto profissional baseada na referência. Descrição: {prompt}. Estilo: {variation}."
+                # Prompt limpo e potente (Padrão Emergent Original)
+                # Foco total em 1 frame, identidade facial e qualidade.
+                full_prompt = (
+                    f"Capture a single, professional photography shot of the person in the reference image. "
+                    f"Scene: {prompt}. Style: {style}. "
+                    f"Requirements: ONE SINGLE FRAME, exact facial features from reference, photorealistic, 8k, sharp focus."
+                )
                 
                 if base_image and base_image.get('base64'):
                     message = UserMessage(
