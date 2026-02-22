@@ -914,29 +914,55 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
         
         async def generate_single_photo(index):
             try:
+                # DIRETIVA DE BLINDAGEM DE IDENTIDADE (Nível Militar)
+                system_directive = """🔐 SYSTEM DIRECTIVE — IDENTITY PRESERVATION MODE (API VERSION)
+ROLE: You are an image generation and editing model operating under STRICT IDENTITY PRESERVATION MODE. Your primary constraint is to preserve the original subject’s identity with maximum fidelity.
+
+1️⃣ IDENTITY LOCK PROTOCOL:
+When a user uploads a reference image, you MUST:
+- Facial Structure Preservation: Maintain exact facial proportions, bone structure, jawline, cheek structure, eye spacing/shape, nose shape, lip structure.
+- Non-Negotiable: Do NOT reinterpret facial geometry, do NOT beautify, do NOT smooth skin beyond realism, do NOT alter age/ethnicity/gender.
+- Do NOT replace face with model-generated alternative.
+
+2️⃣ SKIN TONE PRESERVATION: Preserve exact skin tone, undertone, texture, freckles, moles. No artificial whitening or tanning.
+
+3️⃣ CREATIVE CONSTRAINTS: Only 1 frame allowed. Maintain photorealism. Identify consistency ALWAYS overrides aesthetics."""
+
+                identity_lock_config = {
+                  "identity_lock": True,
+                  "skin_tone_lock": True,
+                  "structural_modification": False,
+                  "ethnicity_modification": False,
+                  "age_modification": False,
+                  "beauty_filter_intensity": 0.1,
+                  "max_retouch_level": "minimal",
+                  "face_reinterpretation": False
+                }
+
                 chat = LlmChat(
                     api_key=EMERGENT_LLM_KEY,
                     session_id=f"photoshoot_{user_id}_{uuid.uuid4()}_{index}",
-                    system_message="Você é a tecnologia Nano Banana de elite. Sua única missão é gerar UMA FOTO ÚNICA de altíssima fidelidade ao rosto da referência."
+                    system_message=system_directive
                 )
                 chat.with_model("gemini", "gemini-3-pro-image-preview")\
                     .with_params(modalities=["image", "text"])
                 
-                # Variações sutis de estilo (em português para manter o contexto original)
+                # Variações sutis de estilo mantendo a fidelidade
                 styles = [
-                    "fotografia profissional, close-up, foco nítido no rosto",
-                    "plano americano, iluminação de estúdio profissional",
-                    "estilo cinematográfico, luz natural suave, 8k",
-                    "retrato editorial de luxo, fundo desfocado",
-                    "pose de autoridade, nitidez absoluta, pele realista"
+                    "fotografia profissional premium, iluminação de estúdio",
+                    "retrato corporativo de alto luxo, foco nítido",
+                    "estilo cinematográfico 8k, luz natural",
+                    "plano americano, nitidez absoluta na face",
+                    "fotografia editorial, pele realista, textura natural"
                 ]
                 style = styles[index % len(styles)]
                 
-                # Prompt em Português (Fórmula Elite Original)
+                # Comando final com trava de identidade
                 full_prompt = (
-                    f"Gere 1 foto profissional mantendo o rosto EXATAMENTE igual ao da imagem de referência. "
+                    f"CONFIG: {identity_lock_config}\n"
+                    f"COMANDO: Gere 1 foto profissional mantendo a biometria facial 100% fiel à referência. "
                     f"Cenário: {prompt}. Estilo: {style}. "
-                    f"Requisitos obrigatórios: Foto única (apenas 1 pose), sem colagem, sem mosaico, fidelidade facial absoluta, qualidade 8k."
+                    f"REQUISITO: Frame único, sem colagem, sem alteração de traços."
                 )
                 
                 if base_image and base_image.get('base64'):
@@ -957,6 +983,7 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
                 logger.error(f"Erro na foto {index}: {str(e)}")
                 return None
 
+        import asyncio
         tasks = [generate_single_photo(i) for i in range(num_images)]
         results = await asyncio.gather(*tasks)
         generated_images = [r for r in results if r is not None]
@@ -979,17 +1006,20 @@ async def edit_image(request: dict, user_id: str = Depends(get_current_user)):
         if not base64_img or not prompt:
             raise HTTPException(status_code=400, detail="Imagem e prompt são obrigatórios")
         
+        # SISTEMA DE PROTEÇÃO IDENTIDADE
+        system_directive = "🔐 SYSTEM DIRECTIVE — IDENTITY PRESERVATION MODE. ROLE: Strictly preserve the original subject’s identity. Do NOT alter facial geometry, skin tone, or structural biometrics."
+        
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"edit_{user_id}_{uuid.uuid4()}",
-            system_message="Você é especialista em edição de imagens. Aplique as modificações solicitadas mantendo a qualidade."
+            system_message=system_directive
         )
         # Usar modelo Gemini 3 para edição de imagens
         chat.with_model("gemini", "gemini-3-pro-image-preview")\
             .with_params(modalities=["image", "text"])
         
         message = UserMessage(
-            text=f"Edite esta imagem aplicando a seguinte modificação: {prompt}. Mantenha a qualidade e aplique as mudanças de forma natural e profissional.",
+            text=f"TASK: Edit this image based on the prompt '{prompt}' WITHOUT ALTERING the subject's face or identity. Keep biometric fidelity 100%. One single output frame.",
             file_contents=[ImageContent(base64_img)]
         )
         
