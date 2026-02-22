@@ -917,27 +917,26 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
                 chat = LlmChat(
                     api_key=EMERGENT_LLM_KEY,
                     session_id=f"photoshoot_{user_id}_{uuid.uuid4()}_{index}",
-                    system_message="Você é um fotógrafo profissional de altíssima performance. Sua única função é capturar UMA FOTO ÚNICA, REALISTA e FIÉL à pessoa na referência."
+                    system_message="Você é a tecnologia Nano Banana de elite. Sua única missão é gerar UMA FOTO ÚNICA de altíssima fidelidade ao rosto da referência."
                 )
                 chat.with_model("gemini", "gemini-3-pro-image-preview")\
                     .with_params(modalities=["image", "text"])
                 
-                # Variações de estilo, garantindo frame único
+                # Variações sutis de estilo (em português para manter o contexto original)
                 styles = [
-                    "fotografia editorial, close-up, foco nítido no rosto",
-                    "plano americano, iluminação profissional de estúdio",
-                    "estrato cinematográfico, luz natural, 8k",
-                    "retrato corporativo de alto luxo, fundo desfocado",
-                    "fotografia de moda, luz de ouro, nitidez absoluta"
+                    "fotografia profissional, close-up, foco nítido no rosto",
+                    "plano americano, iluminação de estúdio profissional",
+                    "estilo cinematográfico, luz natural suave, 8k",
+                    "retrato editorial de luxo, fundo desfocado",
+                    "pose de autoridade, nitidez absoluta, pele realista"
                 ]
                 style = styles[index % len(styles)]
                 
-                # Prompt limpo e potente (Padrão Emergent Original)
-                # Foco total em 1 frame, identidade facial e qualidade.
+                # Prompt em Português (Fórmula Elite Original)
                 full_prompt = (
-                    f"Capture a single, professional photography shot of the person in the reference image. "
-                    f"Scene: {prompt}. Style: {style}. "
-                    f"Requirements: ONE SINGLE FRAME, exact facial features from reference, photorealistic, 8k, sharp focus."
+                    f"Gere 1 foto profissional mantendo o rosto EXATAMENTE igual ao da imagem de referência. "
+                    f"Cenário: {prompt}. Estilo: {style}. "
+                    f"Requisitos obrigatórios: Foto única (apenas 1 pose), sem colagem, sem mosaico, fidelidade facial absoluta, qualidade 8k."
                 )
                 
                 if base_image and base_image.get('base64'):
