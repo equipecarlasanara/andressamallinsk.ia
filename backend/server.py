@@ -722,7 +722,7 @@ async def handle_unified_chat(chat_msg: ChatMessage, user_id: str):
             system_message=ESTRATEGISTA_SYSTEM_INSTRUCTION,
             history=history
         )
-        chat.with_model("gemini", "gemini-1.5-flash")
+        chat.with_model("gemini", "gemini-1.5-flash-latest")
         
         message = UserMessage(text=chat_msg.message)
         response = await chat.send_message(message)
