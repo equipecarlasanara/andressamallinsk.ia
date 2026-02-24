@@ -37,11 +37,13 @@ export default function Login({ onLogin }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#19161B] p-4" data-testid="login-page">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="font-title text-5xl font-bold mb-2" style={{ color: '#D4AF37' }} data-testid="app-title">
-            A ESTRATEGISTA
-          </h1>
-          <p className="text-[#CBC8C9]/70 text-sm tracking-widest">O MESMO CÉREBRO QUE CONSTRUIU MILHÕES, AGORA CONSTRUINDO COM VOCÊ.</p>
+        <div className="text-center mb-8 flex flex-col items-center">
+          <img
+            src="/logo_full.png"
+            alt="A IA Estrategista"
+            className="w-48 mb-4 drop-shadow-[0_0_15px_rgba(212,175,55,0.3)]"
+          />
+          <p className="text-[#CBC8C9]/70 text-sm tracking-widest px-4">O MESMO CÉREBRO QUE CONSTRUIU MILHÕES, AGORA CONSTRUINDO COM VOCÊ.</p>
         </div>
 
         <div className="bg-black/30 border border-[#3A0A16] rounded-lg p-8">

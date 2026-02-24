@@ -15,16 +15,14 @@ export default function Sidebar({ activeView, setActiveView, user, onLogout }) {
 
   return (
     <aside className="w-64 bg-[#19161B] border-r border-[#3A0A16] flex flex-col p-4" data-testid="sidebar">
-      <div className="text-center py-4">
+      <div className="text-center py-4 flex flex-col items-center">
         <img
-          src="/lion-profile.jpg"
-          alt="Estrategista"
-          className="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-[#D4AF37] object-cover"
+          src="/logo_full.png"
+          alt="Estrategista Logo"
+          className="w-32 mb-4 drop-shadow-[0_0_10px_rgba(212,175,55,0.2)]"
           data-testid="profile-image"
         />
-        <h1 className="font-title text-3xl font-bold" style={{ color: '#D4AF37' }} data-testid="sidebar-title">
-          A ESTRATEGISTA
-        </h1>
+        {/* Título removido para evitar duplicidade com a logo */}
         {user && (
           <p className="text-xs text-[#CBC8C9]/50 mt-2" data-testid="user-name">{user.name}</p>
         )}

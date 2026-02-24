@@ -52,7 +52,7 @@ export default function GoalsDashboard() {
 
   const checkFollowUpNotifications = (leadsData) => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    
+
     const today = new Date().toISOString().split('T')[0];
     const leadsWithFollowUp = leadsData.filter(lead => {
       if (!lead.followup_date) return false;
@@ -230,9 +230,16 @@ export default function GoalsDashboard() {
   return (
     <div className="p-6 h-full overflow-y-auto bg-[#19161B]" data-testid="goals-dashboard">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-title text-[#CBC8C9] mb-6" data-testid="dashboard-title">
-          Dashboard de Metas
-        </h1>
+        <div className="flex flex-col mb-6">
+          <img
+            src="/logo_full.png"
+            alt="Logo"
+            className="w-32 mb-2 drop-shadow-[0_0_10px_rgba(212,175,55,0.2)]"
+          />
+          <h1 className="text-4xl font-title text-[#CBC8C9]" data-testid="dashboard-title">
+            Dashboard de Metas
+          </h1>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-gradient-to-br from-[#3A0A16] to-black border border-[#53050B] rounded-lg p-4" data-testid="goal-card">
@@ -319,8 +326,8 @@ export default function GoalsDashboard() {
             ) : (
               <div className="space-y-2">
                 {weeklyActions.slice(0, 5).map((action) => (
-                  <div 
-                    key={action.id} 
+                  <div
+                    key={action.id}
                     className="flex items-start gap-2 p-2 bg-[#19161B] border border-[#3A0A16] rounded hover:border-[#53050B]/50 cursor-pointer"
                     onClick={() => setShowActionDetail(action)}
                   >
@@ -362,8 +369,8 @@ export default function GoalsDashboard() {
             ) : (
               <div className="space-y-2">
                 {leads.slice(0, 5).map((lead) => (
-                  <div 
-                    key={lead.id} 
+                  <div
+                    key={lead.id}
                     className="flex items-center gap-2 p-2 bg-[#19161B] border border-[#3A0A16] rounded hover:border-[#53050B]/50 cursor-pointer"
                     onClick={() => setShowLeadDetail(lead)}
                   >
@@ -540,8 +547,8 @@ export default function GoalsDashboard() {
                   {showActionDetail.completed ? 'Concluída' : 'Pendente'}
                 </span>
               </div>
-              <button 
-                onClick={() => { handleToggleAction(showActionDetail); setShowActionDetail(null); }} 
+              <button
+                onClick={() => { handleToggleAction(showActionDetail); setShowActionDetail(null); }}
                 className="w-full bg-[#53050B] hover:bg-red-800 text-white py-2 rounded-lg"
               >
                 {showActionDetail.completed ? 'Marcar como Pendente' : 'Marcar como Concluída'}
@@ -590,8 +597,8 @@ export default function GoalsDashboard() {
                   <p className="text-[#CBC8C9] whitespace-pre-wrap bg-black/30 p-3 rounded">{showLeadDetail.notes}</p>
                 </div>
               )}
-              <button 
-                onClick={() => { handleDeleteLead(showLeadDetail.id); setShowLeadDetail(null); }} 
+              <button
+                onClick={() => { handleDeleteLead(showLeadDetail.id); setShowLeadDetail(null); }}
                 className="w-full bg-red-900 hover:bg-red-800 text-white py-2 rounded-lg"
               >
                 Excluir Lead

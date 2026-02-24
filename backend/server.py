@@ -914,29 +914,28 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
         
         async def generate_single_photo(index):
             try:
-                # DIRETIVA DE BLINDAGEM DE IDENTIDADE (Nível Militar)
-                system_directive = """🔐 SYSTEM DIRECTIVE — IDENTITY PRESERVATION MODE (API VERSION)
-ROLE: You are an image generation and editing model operating under STRICT IDENTITY PRESERVATION MODE. Your primary constraint is to preserve the original subject’s identity with maximum fidelity.
+                # 🔒 COMANDO INTERNO — PRESERVAÇÃO DE IDENTIDADE VISUAL (v2)
+                system_directive = """🔒 COMANDO INTERNO — PRESERVAÇÃO DE IDENTIDADE VISUAL
+📌 Diretriz Obrigatória de Geração e Edição de Imagem
 
-1️⃣ IDENTITY LOCK PROTOCOL:
-When a user uploads a reference image, you MUST:
-- Facial Structure Preservation: Maintain exact facial proportions, bone structure, jawline, cheek structure, eye spacing/shape, nose shape, lip structure.
-- Non-Negotiable: Do NOT reinterpret facial geometry, do NOT beautify, do NOT smooth skin beyond realism, do NOT alter age/ethnicity/gender.
-- Do NOT replace face with model-generated alternative.
+Sua única função é preservar a identidade facial com fidelidade absoluta.
 
-2️⃣ SKIN TONE PRESERVATION: Preserve exact skin tone, undertone, texture, freckles, moles. No artificial whitening or tanning.
+1️⃣ PRESERVAÇÃO TOTAL DA IDENTIDADE: Manter 100% dos traços faciais originais (formato do rosto, estrutura óssea, olhos, nariz, boca, proporções). Proibido embelezamento automático ou alteração de idade/etnia.
 
-3️⃣ CREATIVE CONSTRAINTS: Only 1 frame allowed. Maintain photorealism. Identify consistency ALWAYS overrides aesthetics."""
+2️⃣ TOM DE PELE: Manter exatamente o mesmo tom e subtom de pele. Proibido clarear, escurecer ou suavizar textura natural de forma artificial.
+
+3️⃣ PERMISSÕES CONTROLADAS: Apenas iluminação, cenário, enquadramento, roupas e variações de pose (sem distorcer a face).
+
+4️⃣ PROIBIÇÕES ABSOLUTAS: Proibido transformar a pessoa em outra, usar modelos genéricos ou recriar rosto por interpretação livre.
+
+5️⃣ PRIORIDADE: A fidelidade à identidade original tem prioridade absoluta sobre qualquer estilo artístico. IDENTIDADE SEMPRE SUPERA ESTÉTICA."""
 
                 identity_lock_config = {
                   "identity_lock": True,
                   "skin_tone_lock": True,
                   "structural_modification": False,
-                  "ethnicity_modification": False,
-                  "age_modification": False,
-                  "beauty_filter_intensity": 0.1,
-                  "max_retouch_level": "minimal",
-                  "face_reinterpretation": False
+                  "face_reinterpretation": False,
+                  "beauty_filter_intensity": 0.05
                 }
 
                 chat = LlmChat(
@@ -957,12 +956,12 @@ When a user uploads a reference image, you MUST:
                 ]
                 style = styles[index % len(styles)]
                 
-                # Comando final com trava de identidade
+                # Comando final com trava de identidade absoluta
                 full_prompt = (
                     f"CONFIG: {identity_lock_config}\n"
-                    f"COMANDO: Gere 1 foto profissional mantendo a biometria facial 100% fiel à referência. "
-                    f"Cenário: {prompt}. Estilo: {style}. "
-                    f"REQUISITO: Frame único, sem colagem, sem alteração de traços."
+                    f"COMANDO OBRIGATÓRIO: Gere 1 foto profissional seguindo a DIRETRIZ DE PRESERVAÇÃO DE IDENTIDADE. "
+                    f"Rosto da referência deve ser reconhecível instantaneamente (fidelidade 100%). "
+                    f"Cenário: {prompt}. Estilo: {style}. FRAME ÚNICO."
                 )
                 
                 if base_image and base_image.get('base64'):
@@ -1006,8 +1005,11 @@ async def edit_image(request: dict, user_id: str = Depends(get_current_user)):
         if not base64_img or not prompt:
             raise HTTPException(status_code=400, detail="Imagem e prompt são obrigatórios")
         
-        # SISTEMA DE PROTEÇÃO IDENTIDADE
-        system_directive = "🔐 SYSTEM DIRECTIVE — IDENTITY PRESERVATION MODE. ROLE: Strictly preserve the original subject’s identity. Do NOT alter facial geometry, skin tone, or structural biometrics."
+        # SISTEMA DE PROTEÇÃO IDENTIDADE v2
+        system_directive = """🔒 COMANDO INTERNO — PRESERVAÇÃO DE IDENTIDADE VISUAL
+Sua única função é editar a imagem preservando 100% da identidade facial da pessoa na referência.
+Não altere geometria facial, tom de pele ou traços biométricos.
+Identidade SEMPRE supera qualquer pedido de alteração estética."""
         
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
@@ -1019,7 +1021,7 @@ async def edit_image(request: dict, user_id: str = Depends(get_current_user)):
             .with_params(modalities=["image", "text"])
         
         message = UserMessage(
-            text=f"TASK: Edit this image based on the prompt '{prompt}' WITHOUT ALTERING the subject's face or identity. Keep biometric fidelity 100%. One single output frame.",
+            text=f"TASK: Edit this image based on the prompt '{prompt}' WITHOUT ALTERING the subject's face, features, or identity. Keep 100% biometric fidelity. Single frame.",
             file_contents=[ImageContent(base64_img)]
         )
         

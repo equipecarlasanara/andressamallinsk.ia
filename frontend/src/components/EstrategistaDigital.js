@@ -99,8 +99,13 @@ export default function EstrategistaDigital() {
     <div className="h-full flex flex-col bg-[#19161B]" data-testid="estrategista-digital">
       <div className="border-b border-[#3A0A16] p-6 flex justify-between items-center bg-black/20">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#D4AF37] rounded-full flex items-center justify-center shadow-lg shadow-[#D4AF37]/20">
-            <span className="text-black font-bold text-xl">L</span>
+          <div className="w-10 h-10 bg-[#D4AF37] rounded-full flex items-center justify-center shadow-lg shadow-[#D4AF37]/20 overflow-hidden">
+            <img
+              src="/logo_full.png"
+              alt="Icon"
+              className="w-8 h-16 object-cover object-top"
+              style={{ transform: 'translateY(4px)' }}
+            />
           </div>
           <div>
             <h1 className="text-2xl font-title text-[#CBC8C9]" data-testid="chat-title">
