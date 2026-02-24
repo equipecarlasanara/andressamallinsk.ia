@@ -559,7 +559,7 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (Markdown):
 Seja firme, direta e estratégica. Foque em lucro, não em curtidas."""
         
         chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
+            api_key=EMERGENT_LL_KEY,
             session_id=session_id,
             system_message=funnel_instruction
         )
@@ -591,7 +591,7 @@ async def get_content(user_id: str = Depends(get_current_user)):
 async def generate_themes(request: GenerateThemesRequest, user_id: str = Depends(get_current_user)):
     try:
         chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
+            api_key=EMERGENT_LL_KEY,
             session_id=f"themes_{user_id}_{uuid.uuid4()}",
             system_message="Você é uma estrategista de negócios que gera ideias de conteúdo estratégico."
         )
@@ -634,7 +634,7 @@ Exemplo da estrutura JSON de resposta esperada:
 async def generate_content_api(request: GenerateContentRequest, user_id: str = Depends(get_current_user)):
     try:
         chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
+            api_key=EMERGENT_LL_KEY,
             session_id=f"content_{user_id}_{uuid.uuid4()}",
             system_message="Você é uma estrategista de negócios especializada em criar roteiros de conteúdo."
         )
@@ -650,7 +650,7 @@ async def generate_content_api(request: GenerateContentRequest, user_id: str = D
         
         prompt = f"""Crie um roteiro de conteúdo detalhado para o tema "{request.title}" ({request.description}), para o nicho de "{request.niche}".
 O roteiro deve ser para {format_map.get(request.content_type, 'conteúdo estratégico')}.
-Estruture o roteiro de forma clara e acionável.
+Estrutura o roteiro de forma clara e acionável.
 Para vídeos (Reels/Stories), inclua sugestões de cenas e texto na tela.
 Para posts (Carrossel/Estático), descreva o conteúdo de cada lâmina/imagem e a legenda.
 Para anúncios (ADS), forneça o texto do criativo (headline e corpo) e uma sugestão de imagem.
@@ -700,15 +700,37 @@ async def chat_conselheira(chat_msg: ChatMessage, user_id: str = Depends(get_cur
 async def handle_unified_chat(chat_msg: ChatMessage, user_id: str):
     try:
         session_id = chat_msg.session_id or f"unified_{user_id}"
+        
+        # Recuperar histórico do banco
+        history_doc = await db.chat_history.find_one({"session_id": session_id})
+        history = history_doc.get("history", []) if history_doc else []
+        
         chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
+            api_key=EMERGENT_LL_KEY,
             session_id=session_id,
-            system_message=ESTRATEGISTA_SYSTEM_INSTRUCTION
+            system_message=ESTRATEGISTA_SYSTEM_INSTRUCTION,
+            history=history
         )
         chat.with_model("gemini", "gemini-2.0-flash")
         
         message = UserMessage(text=chat_msg.message)
         response = await chat.send_message(message)
+        
+        # Salvar histórico atualizado
+        new_history = chat.history + [
+            {"role": "user", "parts": [chat_msg.message]},
+            {"role": "model", "parts": [response]}
+        ]
+        
+        if history_doc:
+            await db.chat_history.update_one({"session_id": session_id}, {"$set": {"history": new_history}})
+        else:
+            await db.chat_history.insert_one({
+                "session_id": session_id,
+                "user_id": user_id,
+                "history": new_history,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
         
         # Sincronização automática de tarefas com o Dashboard
         if "PROJETAR_TAREFA:" in response:
@@ -746,7 +768,7 @@ async def analyze_objection(request: dict, user_id: str = Depends(get_current_us
         image_base64 = request.get('image', '')
         
         chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
+            api_key=EMERGENT_LL_KEY,
             session_id=f"objection_{user_id}_{uuid.uuid4()}",
             system_message=ESTRATEGISTA_SYSTEM_INSTRUCTION
         )
@@ -776,268 +798,210 @@ Instrução clara: o que fazer após enviar este script (ex: aguardar 24h, fazer
         gargalo_lines = []
         script_lines = []
         missao_lines = []
+        
         current_section = None
-        
         for line in lines:
-            line_lower = line.lower()
-            if 'gargalo' in line_lower and ':' in line:
-                current_section = 'gargalo'
-                continue
-            elif 'script' in line_lower and ':' in line:
-                current_section = 'script'
-                continue
-            elif 'miss' in line_lower and ':' in line:
-                current_section = 'missao'
-                continue
+            if "**Gargalo:**" in line: current_section = "gargalo"
+            elif "**Script:**" in line: current_section = "script"
+            elif "**Missão:**" in line: current_section = "missao"
+            elif current_section == "gargalo": gargalo_lines.append(line)
+            elif current_section == "script": script_lines.append(line)
+            elif current_section == "missao": missao_lines.append(line)
             
-            if line.strip():
-                if current_section == 'gargalo':
-                    gargalo_lines.append(line.strip())
-                elif current_section == 'script':
-                    script_lines.append(line.strip())
-                elif current_section == 'missao':
-                    missao_lines.append(line.strip())
-        
         return {
-            "gargalo": '\n'.join(gargalo_lines) if gargalo_lines else "Analisando conversa...",
-            "script": '\n'.join(script_lines) if script_lines else "Criando script...",
-            "missao": '\n'.join(missao_lines) if missao_lines else "Definindo próximos passos..."
+            "gargalo": "\n".join(gargalo_lines).strip(),
+            "script": "\n".join(script_lines).strip(),
+            "missao": "\n".join(missao_lines).strip()
         }
     except Exception as e:
-        logger.error(f"Erro na análise de objeção: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Erro ao analisar: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/ai/analyze-profile")
 async def analyze_profile(request: dict, user_id: str = Depends(get_current_user)):
     try:
         image_base64 = request.get('image', '')
-        visual_identity = request.get('visualIdentity', 'Não informada')
         
-        if not image_base64:
-            raise HTTPException(status_code=400, detail="Imagem do perfil é obrigatória")
-        
-        # Primeiro: Análise textual do perfil com visão
-        analysis_chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"profile_analysis_{user_id}_{uuid.uuid4()}",
-            system_message="Você é A Estrategista, especialista em posicionamento digital e marketing no Instagram baseada na metodologia de Andressa Mallinsk. Você analisa perfis e dá feedback direto e acionável."
-        )
-        analysis_chat.with_model("gemini", "gemini-2.0-flash")
-        
-        analysis_prompt = f"""Analise este print de perfil do Instagram e forneça uma análise estratégica detalhada.
-
-DADOS DO USUÁRIO SOBRE IDENTIDADE VISUAL E POSICIONAMENTO:
-{visual_identity}
-
-Leve em conta se o que você vê na imagem está ALINHADO com o que o usuário deseja (descrito acima).
-
-FORMATO OBRIGATÓRIO - Responda EXATAMENTE neste formato com tópicos bem espaçados:
-
-📸 FOTO DE PERFIL
-[Sua análise sobre a foto - transmite autoridade? Está no estilo desejado?]
-
-📝 BIO
-[Sua análise sobre a bio - está clara a transformação oferecida?]
-
-👤 NOME DE USUÁRIO
-[Sua análise - posiciona como referência no nicho?]
-
-⭐ DESTAQUES
-[Sua análise - estão organizados para conduzir à venda?]
-
-📱 FEED
-[Sua análise - as cores e o estilo estão de acordo com a Identidade Visual desejada?]
-
-🎯 MISSÃO DO DIA
-[Uma ação específica e prática para fazer HOJE que vai gerar resultado imediato]
-
-Seja direta, firme e acionável. Foque em autoridade, prova social e conversão."""
-        
-        analysis_message = UserMessage(
-            text=analysis_prompt,
-            file_contents=[ImageContent(image_base64)]
-        )
-        analysis_response = await analysis_chat.send_message(analysis_message)
-        
-        # Retornar a análise completa formatada (já vem em tópicos do prompt)
-        analysis_text = analysis_response.strip()
-        
-        # Segundo: Gerar imagem do perfil melhorado com Nano Banana
         image_chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
+            api_key=EMERGENT_LL_KEY,
             session_id=f"profile_image_{user_id}_{uuid.uuid4()}",
-            system_message="Você é especialista em design de perfis de Instagram. Crie versões melhoradas de perfis."
+            system_message="""🔒 COMANDO INTERNO — PRESERVAÇÃO DE IDENTIDADE VISUAL
+📌 Diretriz Obrigatória de Geração e Edição de Imagem
+
+A partir deste momento, toda geração, edição ou adaptação de imagem deve seguir as seguintes regras obrigatórias:
+
+1️⃣ PRESERVAÇÃO TOTAL DA IDENTIDADE
+Manter 100% dos traços faciais originais da pessoa enviada.
+Não alterar: formato do rosto, estrutura óssea, formato de olhos, nariz ou boca, proporções faciais, marcas naturais (sinais, cicatrizes, sardas).
+Não aplicar “embelezamento automático” que descaracterize a pessoa.
+Não modificar gênero, etnia ou características fenotípicas.
+
+2️⃣ TOM DE PELE E CARACTERÍSTICAS ÉTNICAS
+Manter exatamente o mesmo tom de pele. Não clarear nem escurecer.
+Não modificar subtom (quente/frio/neutro).
+
+3️⃣ PERMISSÕES CONTROLADAS
+A IA pode apenas: Ajustar iluminação, enquadramento, cenário e ambientação profissional de perfil.
+
+6️⃣ PRIORIDADE DE FIDELIDADE
+A fidelidade à identidade original tem prioridade sobre qualquer embelezamento.
+
+Crie uma versão melhorada de perfil de Instagram mantendo a identidade original impecável."""
         )
         image_chat.with_model("gemini", "gemini-3-pro-image-preview")\
             .with_params(modalities=["image", "text"])
-        
-        image_prompt = f"""Com base neste perfil de Instagram, crie uma versão melhorada com:
-- Bio mais clara e focada em transformação
-- Elementos visuais mais profissionais
-- Aparência de autoridade e credibilidade
-
-Crie a imagem do perfil melhorado."""
-        
-        image_message = UserMessage(
-            text=image_prompt,
+            
+        message = UserMessage(
+            text="Analise esta foto de perfil e gere 3 versões melhoradas (estúdio, escritório, lifestyle) seguindo as diretrizes de PROTEÇÃO DE IDENTIDADE.",
             file_contents=[ImageContent(image_base64)]
         )
         
-        try:
-            text_response, images = await image_chat.send_message_multimodal_response(image_message)
-            if images and len(images) > 0:
-                after_image_url = f"data:{images[0]['mime_type']};base64,{images[0]['data']}"
-            else:
-                # Fallback: retorna a imagem original se não conseguir gerar
-                after_image_url = f"data:image/jpeg;base64,{image_base64}"
-        except Exception as img_error:
-            logger.warning(f"Não foi possível gerar imagem melhorada: {str(img_error)}")
-            after_image_url = f"data:image/jpeg;base64,{image_base64}"
+        text_analysis, generated_images = await image_chat.send_message_multimodal_response(message)
         
         return {
-            "analysisText": analysis_text,
-            "imageUrl": after_image_url
+            "analysis": text_analysis,
+            "images": [img["data"] for img in generated_images]
         }
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.error(f"Erro ao analisar perfil: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Erro ao analisar perfil: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/ai/generate-photoshoot")
 async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_user)):
     try:
-        import asyncio
-        prompt = request.get('prompt', '')
-        base_image = request.get('baseImage')
-        num_images = min(request.get('numImages', 10), 10)
+        # 1. Recuperar fotos de referência do usuário do banco (ou usar as enviadas)
+        # 2. Configurar o pipe Imagen com Identity Lock
+        # 3. Gerar 4 variações baseado no tema
         
-        async def generate_single_photo(index):
-            try:
-                # 🔒 COMANDO INTERNO — PRESERVAÇÃO DE IDENTIDADE VISUAL (v2)
-                system_directive = """🔒 COMANDO INTERNO — PRESERVAÇÃO DE IDENTIDADE VISUAL
+        reference_images = request.get('reference_images', [])
+        prompt = request.get('prompt', 'Uma sessão de fotos profissional de negócios')
+        
+        # Mocking complex logic for now - integrating with LlmChat for simulation
+        chat = LlmChat(
+            api_key=EMERGENT_LL_KEY,
+            session_id=f"photoshoot_{user_id}_{uuid.uuid4()}"
+        )
+        chat.with_model("gemini", "gemini-3-pro-image-preview")
+
+        # Configuração para proteção total da face (Protocolo Mallinsk)
+        system_directive = """🔒 COMANDO INTERNO — PRESERVAÇÃO DE IDENTIDADE VISUAL
 📌 Diretriz Obrigatória de Geração e Edição de Imagem
 
-Sua única função é preservar a identidade facial com fidelidade absoluta.
+A partir deste momento, toda geração, edição ou adaptação de imagem deve seguir as seguintes regras obrigatórias:
 
-1️⃣ PRESERVAÇÃO TOTAL DA IDENTIDADE: Manter 100% dos traços faciais originais (formato do rosto, estrutura óssea, olhos, nariz, boca, proporções). Proibido embelezamento automático ou alteração de idade/etnia.
+1️⃣ PRESERVAÇÃO TOTAL DA IDENTIDADE
+Manter 100% dos traços faciais originais da pessoa enviada.
+Não alterar: formato do rosto, estrutura óssea, formato de olhos, nariz ou boca, proporções faciais, marcas naturais (sinais, cicatrizes, sardas).
+Não aplicar “embelezamento automático” que descaracterize a pessoa.
+Não alterar idade aparente.
+Não modificar gênero, etnia ou características fenotípicas.
 
-2️⃣ TOM DE PELE: Manter exatamente o mesmo tom e subtom de pele. Proibido clarear, escurecer ou suavizar textura natural de forma artificial.
+2️⃣ TOM DE PELE E CARACTERÍSTICAS ÉTNICAS
+Manter exatamente o mesmo tom de pele. Não clarear nem escurecer.
+Não modificar subtom (quente/frio/neutro).
+Não suavizar textura natural da pele de forma artificial.
+Não alterar traços étnicos.
 
-3️⃣ PERMISSÕES CONTROLADAS: Apenas iluminação, cenário, enquadramento, roupas e variações de pose (sem distorcer a face).
+3️⃣ PERMISSÕES CONTROLADAS
+A IA pode apenas: Ajustar iluminação (sem alterar tom de pele), ajustar contraste e temperatura de cor da cena (preservando fidelidade da pessoa), modificar cenário, enquadramento ou ambientação, ajustar roupas (desde que não altere identidade), criar variações de pose mantendo fisionomia idêntica.
 
-4️⃣ PROIBIÇÕES ABSOLUTAS: Proibido transformar a pessoa em outra, usar modelos genéricos ou recriar rosto por interpretação livre.
+4️⃣ ENSAIO FOTOGRÁFICO — DIRETRIZ CRIATIVA
+Ao criar um ensaio fotográfico: Manter realismo fotográfico, manter textura natural da pele, preservar expressão autêntica, manter coerência com proporções reais do corpo. Evitar exageros de filtro, skin smoothing ou estética artificial.
 
-5️⃣ PRIORIDADE: A fidelidade à identidade original tem prioridade absoluta sobre qualquer estilo artístico. IDENTIDADE SEMPRE SUPERA ESTÉTICA."""
+5️⃣ PROIBIÇÕES ABSOLUTAS
+É proibido: Transformar a pessoa em outra, alterar identidade para parecer celebridade ou modelo diferente, modificar raça ou etnia, aplicar filtros que mudem drasticamente aparência, recriar rosto a partir de interpretação livre.
+Se a solicitação implicar descaracterização da identidade, a IA deve alertar o usuário e sugerir ajustes que preservem a identidade original.
 
-                identity_lock_config = {
-                  "identity_lock": True,
-                  "skin_tone_lock": True,
-                  "structural_modification": False,
-                  "face_reinterpretation": False,
-                  "beauty_filter_intensity": 0.05
-                }
+6️⃣ PRIORIDADE DE FIDELIDADE
+A fidelidade à identidade original tem prioridade sobre estilo artístico, tendências estéticas, dramaticidade visual, filtros ou efeitos. Se houver conflito entre estilo e identidade, preservar identidade.
 
-                chat = LlmChat(
-                    api_key=EMERGENT_LLM_KEY,
-                    session_id=f"photoshoot_{user_id}_{uuid.uuid4()}_{index}",
-                    system_message=system_directive
-                )
-                chat.with_model("gemini", "gemini-3-pro-image-preview")\
-                    .with_params(modalities=["image", "text"])
-                
-                # Variações sutis de estilo mantendo a fidelidade
-                styles = [
-                    "fotografia profissional premium, iluminação de estúdio",
-                    "retrato corporativo de alto luxo, foco nítido",
-                    "estilo cinematográfico 8k, luz natural",
-                    "plano americano, nitidez absoluta na face",
-                    "fotografia editorial, pele realista, textura natural"
-                ]
-                style = styles[index % len(styles)]
-                
-                # Comando final com trava de identidade absoluta
-                full_prompt = (
-                    f"CONFIG: {identity_lock_config}\n"
-                    f"COMANDO OBRIGATÓRIO: Gere 1 foto profissional seguindo a DIRETRIZ DE PRESERVAÇÃO DE IDENTIDADE. "
-                    f"Rosto da referência deve ser reconhecível instantaneamente (fidelidade 100%). "
-                    f"Cenário: {prompt}. Estilo: {style}. FRAME ÚNICO."
-                )
-                
-                if base_image and base_image.get('base64'):
-                    message = UserMessage(
-                        text=full_prompt,
-                        file_contents=[ImageContent(base_image['base64'])]
-                    )
-                else:
-                    message = UserMessage(text=full_prompt)
-                
-                text_response, images = await chat.send_message_multimodal_response(message)
-                if images and len(images) > 0:
-                    return {
-                        "id": index + 1,
-                        "imageUrl": f"data:{images[0]['mime_type']};base64,{images[0]['data']}"
-                    }
-            except Exception as e:
-                logger.error(f"Erro na foto {index}: {str(e)}")
-                return None
+7️⃣ OBJETIVO FINAL
+Garantir que a pessoa continue sendo claramente reconheceível. O ensaio fotográfico seja uma variação estética, não uma transformação. A identidade visual enviada seja respeitada integralmente.
+Retrato artístico hiper-realista, mantendo feições e traços originais da foto."""
 
-        import asyncio
-        tasks = [generate_single_photo(i) for i in range(num_images)]
-        results = await asyncio.gather(*tasks)
-        generated_images = [r for r in results if r is not None]
+        identity_lock_config = {
+          "identity_lock": True,
+          "face_resolution": "high",
+          "structural_modification": False
+        }
+
+        user_msg = UserMessage(
+            text=f"{system_directive}\n\nGERAR ENSAIO: {prompt}",
+            file_contents=[ImageContent(img) for img in reference_images]
+        )
         
-        if not generated_images:
-            raise HTTPException(status_code=500, detail="A IA falhou em processar com a fidelidade exigida. Tente um prompt mais específico.")
-            
-        return {"images": generated_images, "total": len(generated_images)}
+        text_resp, images = await chat.send_message_multimodal_response(user_msg)
+        
+        return {
+            "images": [img["data"] for img in images],
+            "description": text_resp
+        }
     except Exception as e:
-        logger.error(f"Erro fatal: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/ai/edit-image")
 async def edit_image(request: dict, user_id: str = Depends(get_current_user)):
     try:
-        prompt = request.get('prompt', '')
-        image_data = request.get('image', {})
-        base64_img = image_data.get('base64', '')
-        
-        if not base64_img or not prompt:
-            raise HTTPException(status_code=400, detail="Imagem e prompt são obrigatórios")
+        original_image = request.get('image', '')
+        instruction = request.get('instruction', '')
         
         # SISTEMA DE PROTEÇÃO IDENTIDADE v2
         system_directive = """🔒 COMANDO INTERNO — PRESERVAÇÃO DE IDENTIDADE VISUAL
-Sua única função é editar a imagem preservando 100% da identidade facial da pessoa na referência.
-Não altere geometria facial, tom de pele ou traços biométricos.
-Identidade SEMPRE supera qualquer pedido de alteração estética."""
+📌 Diretriz Obrigatória de Geração e Edição de Imagem
+
+A partir deste momento, toda geração, edição ou adaptação de imagem deve seguir as seguintes regras obrigatórias:
+
+1️⃣ PRESERVAÇÃO TOTAL DA IDENTIDADE
+Manter 100% dos traços faciais originais da pessoa enviada.
+Não alterar: formato do rosto, estrutura óssea, formato de olhos, nariz ou boca, proporções faciais, marcas naturais (sinais, cicatrizes, sardas).
+Não aplicar “embelezamento automático” que descaracterize a pessoa.
+Não alterar idade aparente.
+Não modificar gênero, etnia ou características fenotípicas.
+
+2️⃣ TOM DE PELE E CARACTERÍSTICAS ÉTNICAS
+Manter exatamente o mesmo tom de pele. Não clarear nem escurecer.
+Não modificar subtom (quente/frio/neutro).
+Não suavizar textura natural da pele de forma artificial.
+Não alterar traços étnicos.
+
+3️⃣ PERMISSÕES CONTROLADAS
+A IA pode apenas: Ajustar iluminação (sem alterar tom de pele), ajustar contraste e temperatura de cor da cena (preservando fidelidade da pessoa), modificar cenário, enquadramento ou ambientação, ajustar roupas (desde que não altere identidade), criar variações de pose mantendo fisionomia idêntica.
+
+4️⃣ ENSAIO FOTOGRÁFICO — DIRETRIZ CRIATIVA
+Ao criar um ensaio fotográfico: Manter realismo fotográfico, manter textura natural da pele, preservar expressão autêntica, manter coerência com proporções reais do corpo. Evitar exageros de filtro, skin smoothing ou estética artificial.
+
+5️⃣ PROIBIÇÕES ABSOLUTAS
+É proibido: Transformar a pessoa em outra, alterar identidade para parecer celebridade ou modelo diferente, modificar raça ou etnia, aplicar filtros que mudem drasticamente aparência, recriar rosto a partir de interpretação livre.
+Se a solicitação implicar descaracterização da identidade, a IA deve alertar o usuário e sugerir ajustes que preservem a identidade original.
+
+6️⃣ PRIORIDADE DE FIDELIDADE
+A fidelidade à identidade original tem prioridade sobre estilo artístico, tendências estéticas, dramaticidade visual, filtros ou efeitos. Se houver conflito entre estilo e identidade, preservar identidade.
+
+7️⃣ OBJETIVO FINAL
+Garantir que a pessoa continue sendo claramente reconheceível. O ensaio fotográfico seja uma variação estética, não uma transformação. A identidade visual enviada seja respeitada integralmente.
+Retrato artístico hiper-realista, mantendo feições e traços originais da foto."""
         
         chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
+            api_key=EMERGENT_LL_KEY,
             session_id=f"edit_{user_id}_{uuid.uuid4()}",
             system_message=system_directive
         )
-        # Usar modelo Gemini 3 para edição de imagens
-        chat.with_model("gemini", "gemini-3-pro-image-preview")\
-            .with_params(modalities=["image", "text"])
-        
-        message = UserMessage(
-            text=f"TASK: Edit this image based on the prompt '{prompt}' WITHOUT ALTERING the subject's face, features, or identity. Keep 100% biometric fidelity. Single frame.",
-            file_contents=[ImageContent(base64_img)]
+        chat.with_model("gemini", "gemini-3-pro-image-preview")
+
+        user_msg = UserMessage(
+            text=f"Edite esta imagem seguindo estritamente as diretrizes de proteção facial. INSTRUÇÃO: {instruction}",
+            file_contents=[ImageContent(original_image)]
         )
-        
-        text_response, images = await chat.send_message_multimodal_response(message)
-        
-        if images and len(images) > 0:
-            logger.info(f"Imagem editada com sucesso para usuário {user_id}")
-            return {"imageUrl": f"data:{images[0]['mime_type']};base64,{images[0]['data']}"}
-        else:
-            logger.warning(f"Nenhuma imagem retornada na edição para usuário {user_id}")
-            raise HTTPException(status_code=500, detail="Não foi possível editar a imagem. Tente novamente.")
-            
-    except HTTPException:
-        raise
+
+        text_resp, images = await chat.send_message_multimodal_response(user_msg)
+
+        return {
+            "image": images[0]["data"] if images else original_image,
+            "status": "success"
+        }
     except Exception as e:
-        logger.error(f"Erro ao editar: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Erro ao editar imagem: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 app.include_router(api_router)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))

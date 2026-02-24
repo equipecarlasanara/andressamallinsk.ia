@@ -94,12 +94,14 @@ export default function ConselheiraFloat() {
         className="fixed bottom-6 right-6 w-14 h-14 bg-[#D4AF37] hover:bg-[#B8962E] rounded-full flex items-center justify-center shadow-lg z-50 transition-transform hover:scale-110 overflow-hidden"
         data-testid="conselheira-float-button"
       >
-        <img
-          src="/logo_full.png"
-          alt="Chat"
-          className="w-10 h-20 object-cover object-top"
-          style={{ transform: 'translateY(5px)' }}
-        />
+        <div className="w-10 h-10 overflow-hidden flex items-center justify-center">
+          <img
+            src="/logo_full.png"
+            alt=""
+            className="w-10 h-20 object-cover object-top"
+            style={{ transform: 'translateY(5px)' }}
+          />
+        </div>
       </button>
     );
   }
@@ -111,12 +113,14 @@ export default function ConselheiraFloat() {
           onClick={() => setIsMinimized(false)}
           className="w-14 h-14 bg-[#D4AF37] hover:bg-[#B8962E] rounded-full flex items-center justify-center shadow-lg relative transition-transform hover:scale-110 overflow-hidden"
         >
-          <img
-            src="/logo_full.png"
-            alt="Chat"
-            className="w-10 h-20 object-cover object-top"
-            style={{ transform: 'translateY(5px)' }}
-          />
+          <div className="w-10 h-10 overflow-hidden flex items-center justify-center">
+            <img
+              src="/logo_full.png"
+              alt=""
+              className="w-10 h-20 object-cover object-top"
+              style={{ transform: 'translateY(5px)' }}
+            />
+          </div>
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
               {unreadCount}
@@ -134,12 +138,12 @@ export default function ConselheiraFloat() {
           <div className="w-6 h-6 overflow-hidden flex items-center justify-center">
             <img
               src="/logo_full.png"
-              alt="Icon"
+              alt=""
               className="w-5 h-10 object-cover object-top"
               style={{ transform: 'translateY(2px)' }}
             />
           </div>
-          <span className="font-semibold text-[#CBC8C9]">A Estrategista</span>
+          <span className="font-semibold text-[#CBC8C9]"></span>
         </div>
         <div className="flex items-center gap-1">
           {messages.length > 1 && (

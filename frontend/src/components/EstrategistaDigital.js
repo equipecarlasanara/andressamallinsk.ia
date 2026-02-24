@@ -102,18 +102,12 @@ export default function EstrategistaDigital() {
           <div className="w-10 h-10 bg-[#D4AF37] rounded-full flex items-center justify-center shadow-lg shadow-[#D4AF37]/20 overflow-hidden">
             <img
               src="/logo_full.png"
-              alt="Icon"
-              className="w-8 h-16 object-cover object-top"
+              alt=""
+              className="w-10 h-20 object-cover object-top"
               style={{ transform: 'translateY(4px)' }}
             />
           </div>
           <div>
-            <h1 className="text-2xl font-title text-[#CBC8C9]" data-testid="chat-title">
-              Estrategista Digital
-            </h1>
-            <p className="text-xs text-[#D4AF37] font-medium tracking-widest uppercase">
-              Método Andressa Mallinsk
-            </p>
           </div>
         </div>
         <button

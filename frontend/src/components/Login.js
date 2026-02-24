@@ -40,17 +40,13 @@ export default function Login({ onLogin }) {
         <div className="text-center mb-8 flex flex-col items-center">
           <img
             src="/logo_full.png"
-            alt="A IA Estrategista"
-            className="w-48 mb-4 drop-shadow-[0_0_15px_rgba(212,175,55,0.3)]"
+            alt=""
+            className="w-64 mb-4 drop-shadow-[0_0_15px_rgba(212,175,55,0.3)]"
           />
           <p className="text-[#CBC8C9]/70 text-sm tracking-widest px-4">O MESMO CÉREBRO QUE CONSTRUIU MILHÕES, AGORA CONSTRUINDO COM VOCÊ.</p>
         </div>
 
         <div className="bg-black/30 border border-[#3A0A16] rounded-lg p-8">
-          <h2 className="text-2xl font-semibold mb-6 text-center" data-testid="login-form-title">
-            {isRegister ? 'Criar Conta' : 'Entrar'}
-          </h2>
-
           {error && (
             <div className="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded mb-4" data-testid="login-error">
               {error}

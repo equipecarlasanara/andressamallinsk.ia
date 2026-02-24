@@ -14,13 +14,13 @@ class UserMessage:
         self.file_contents = file_contents or []
 
 class LlmChat:
-    def __init__(self, api_key: str, session_id: str, system_message: str = ""):
+    def __init__(self, api_key: str, session_id: str, system_message: str = "", history: List = None):
         self.api_key = api_key
         self.session_id = session_id
         self.system_message = system_message
         self.model_name = "gemini-2.0-flash" # Default fallback mais moderno
         self._configure()
-        self.history = []
+        self.history = history or []
         if system_message:
              # Gemini API handles system content differently, but for simplicity in this mock wrapper, 
              # we might prepend it or use system_instruction if supported by the SDK version.

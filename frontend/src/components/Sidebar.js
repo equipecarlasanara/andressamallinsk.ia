@@ -18,8 +18,8 @@ export default function Sidebar({ activeView, setActiveView, user, onLogout }) {
       <div className="text-center py-4 flex flex-col items-center">
         <img
           src="/logo_full.png"
-          alt="Estrategista Logo"
-          className="w-32 mb-4 drop-shadow-[0_0_10px_rgba(212,175,55,0.2)]"
+          alt=""
+          className="w-48 mb-4 drop-shadow-[0_0_15px_rgba(212,175,55,0.3)]"
           data-testid="profile-image"
         />
         {/* Título removido para evitar duplicidade com a logo */}
