@@ -102,9 +102,8 @@ export default function EstrategistaDigital() {
           <div className="w-10 h-10 bg-[#D4AF37] rounded-full flex items-center justify-center shadow-lg shadow-[#D4AF37]/20 overflow-hidden">
             <img
               src="/logo_full.png"
-              alt=""
-              className="w-10 h-20 object-cover object-top"
-              style={{ transform: 'translateY(4px)' }}
+              alt="A Estrategista"
+              className="w-10 h-10 object-contain"
             />
           </div>
           <div>

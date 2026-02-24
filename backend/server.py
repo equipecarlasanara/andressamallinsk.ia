@@ -559,7 +559,7 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (Markdown):
 Seja firme, direta e estratégica. Foque em lucro, não em curtidas."""
         
         chat = LlmChat(
-            api_key=EMERGENT_LL_KEY,
+            api_key=EMERGENT_LLM_KEY,
             session_id=session_id,
             system_message=funnel_instruction
         )
@@ -591,7 +591,7 @@ async def get_content(user_id: str = Depends(get_current_user)):
 async def generate_themes(request: GenerateThemesRequest, user_id: str = Depends(get_current_user)):
     try:
         chat = LlmChat(
-            api_key=EMERGENT_LL_KEY,
+            api_key=EMERGENT_LLM_KEY,
             session_id=f"themes_{user_id}_{uuid.uuid4()}",
             system_message="Você é uma estrategista de negócios que gera ideias de conteúdo estratégico."
         )
@@ -634,7 +634,7 @@ Exemplo da estrutura JSON de resposta esperada:
 async def generate_content_api(request: GenerateContentRequest, user_id: str = Depends(get_current_user)):
     try:
         chat = LlmChat(
-            api_key=EMERGENT_LL_KEY,
+            api_key=EMERGENT_LLM_KEY,
             session_id=f"content_{user_id}_{uuid.uuid4()}",
             system_message="Você é uma estrategista de negócios especializada em criar roteiros de conteúdo."
         )
@@ -706,7 +706,7 @@ async def handle_unified_chat(chat_msg: ChatMessage, user_id: str):
         history = history_doc.get("history", []) if history_doc else []
         
         chat = LlmChat(
-            api_key=EMERGENT_LL_KEY,
+            api_key=EMERGENT_LLM_KEY,
             session_id=session_id,
             system_message=ESTRATEGISTA_SYSTEM_INSTRUCTION,
             history=history
@@ -738,6 +738,7 @@ async def handle_unified_chat(chat_msg: ChatMessage, user_id: str):
         
         return {"response": response, "session_id": session_id}
     except Exception as e:
+        logger.error(f"Erro no Handle Unified Chat: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro na Estrategista: {str(e)}")
 
 async def process_tasks_from_response(response: str, user_id: str):
@@ -768,7 +769,7 @@ async def analyze_objection(request: dict, user_id: str = Depends(get_current_us
         image_base64 = request.get('image', '')
         
         chat = LlmChat(
-            api_key=EMERGENT_LL_KEY,
+            api_key=EMERGENT_LLM_KEY,
             session_id=f"objection_{user_id}_{uuid.uuid4()}",
             system_message=ESTRATEGISTA_SYSTEM_INSTRUCTION
         )
@@ -822,7 +823,7 @@ async def analyze_profile(request: dict, user_id: str = Depends(get_current_user
         image_base64 = request.get('image', '')
         
         image_chat = LlmChat(
-            api_key=EMERGENT_LL_KEY,
+            api_key=EMERGENT_LLM_KEY,
             session_id=f"profile_image_{user_id}_{uuid.uuid4()}",
             system_message="""🔒 COMANDO INTERNO — PRESERVAÇÃO DE IDENTIDADE VISUAL
 📌 Diretriz Obrigatória de Geração e Edição de Imagem
@@ -847,7 +848,7 @@ A fidelidade à identidade original tem prioridade sobre qualquer embelezamento.
 
 Crie uma versão melhorada de perfil de Instagram mantendo a identidade original impecável."""
         )
-        image_chat.with_model("gemini", "gemini-1.5-pro")\
+        image_chat.with_model("gemini", "gemini-3-pro-image-preview")\
             .with_params(modalities=["image", "text"])
             
         message = UserMessage(
@@ -858,8 +859,8 @@ Crie uma versão melhorada de perfil de Instagram mantendo a identidade original
         text_analysis, generated_images = await image_chat.send_message_multimodal_response(message)
         
         return {
-            "analysis": text_analysis,
-            "images": [{"imageUrl": f"data:image/png;base64,{img['data']}", "id": str(uuid.uuid4())} for img in generated_images]
+            "analysisText": text_analysis,
+            "imageUrl": [{"imageUrl": f"data:image/png;base64,{img['data']}", "id": str(uuid.uuid4())} for img in generated_images][0]["imageUrl"] if generated_images else None
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -876,10 +877,10 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
         
         # Mocking complex logic for now - integrating with LlmChat for simulation
         chat = LlmChat(
-            api_key=EMERGENT_LL_KEY,
+            api_key=EMERGENT_LLM_KEY,
             session_id=f"photoshoot_{user_id}_{uuid.uuid4()}"
         )
-        chat.with_model("gemini", "gemini-1.5-pro")
+        chat.with_model("gemini", "gemini-3-pro-image-preview")
 
         # Configuração para proteção total da face (Protocolo Mallinsk)
         system_directive = """🔒 COMANDO INTERNO — PRESERVAÇÃO DE IDENTIDADE VISUAL
@@ -932,7 +933,7 @@ Retrato artístico hiper-realista, mantendo feições e traços originais da fot
         
         return {
             "images": [{"imageUrl": f"data:image/png;base64,{img['data']}", "id": str(uuid.uuid4())} for img in images],
-            "description": text_resp
+            "total": len(images)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -980,7 +981,7 @@ Garantir que a pessoa continue sendo claramente reconheceível. O ensaio fotogr�
 Retrato artístico hiper-realista, mantendo feições e traços originais da foto."""
         
         chat = LlmChat(
-            api_key=EMERGENT_LL_KEY,
+            api_key=EMERGENT_LLM_KEY,
             session_id=f"edit_{user_id}_{uuid.uuid4()}",
             system_message=system_directive
         )
