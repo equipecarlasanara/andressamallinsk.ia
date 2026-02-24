@@ -43,8 +43,8 @@ export default function ProfileAnalysis() {
           },
           getAuthHeaders()
         );
-        setAfterImage(response.data.imageUrl);
-        setAnalysisText(response.data.analysisText || '');
+        setAfterImage(response.data.images?.[0]?.imageUrl || null);
+        setAnalysisText(response.data.analysis || '');
       } catch (err) {
         console.error('Erro na análise de perfil:', err);
         setError('Ocorreu um erro ao realizar a análise visual. Tente novamente.');

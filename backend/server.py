@@ -859,7 +859,7 @@ Crie uma versão melhorada de perfil de Instagram mantendo a identidade original
         
         return {
             "analysis": text_analysis,
-            "images": [img["data"] for img in generated_images]
+            "images": [{"imageUrl": f"data:image/png;base64,{img['data']}", "id": str(uuid.uuid4())} for img in generated_images]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -931,7 +931,7 @@ Retrato artístico hiper-realista, mantendo feições e traços originais da fot
         text_resp, images = await chat.send_message_multimodal_response(user_msg)
         
         return {
-            "images": [img["data"] for img in images],
+            "images": [{"imageUrl": f"data:image/png;base64,{img['data']}", "id": str(uuid.uuid4())} for img in images],
             "description": text_resp
         }
     except Exception as e:
