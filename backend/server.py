@@ -847,7 +847,7 @@ A fidelidade à identidade original tem prioridade sobre qualquer embelezamento.
 
 Crie uma versão melhorada de perfil de Instagram mantendo a identidade original impecável."""
         )
-        image_chat.with_model("gemini", "gemini-3-pro-image-preview")\
+        image_chat.with_model("gemini", "gemini-1.5-pro")\
             .with_params(modalities=["image", "text"])
             
         message = UserMessage(
@@ -879,7 +879,7 @@ async def generate_photoshoot(request: dict, user_id: str = Depends(get_current_
             api_key=EMERGENT_LL_KEY,
             session_id=f"photoshoot_{user_id}_{uuid.uuid4()}"
         )
-        chat.with_model("gemini", "gemini-3-pro-image-preview")
+        chat.with_model("gemini", "gemini-1.5-pro")
 
         # Configuração para proteção total da face (Protocolo Mallinsk)
         system_directive = """🔒 COMANDO INTERNO — PRESERVAÇÃO DE IDENTIDADE VISUAL
@@ -984,7 +984,7 @@ Retrato artístico hiper-realista, mantendo feições e traços originais da fot
             session_id=f"edit_{user_id}_{uuid.uuid4()}",
             system_message=system_directive
         )
-        chat.with_model("gemini", "gemini-3-pro-image-preview")
+        chat.with_model("gemini", "gemini-1.5-flash")
 
         user_msg = UserMessage(
             text=f"Edite esta imagem seguindo estritamente as diretrizes de proteção facial. INSTRUÇÃO: {instruction}",

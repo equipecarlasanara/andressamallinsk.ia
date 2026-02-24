@@ -40,7 +40,7 @@ export default function Login({ onLogin }) {
         <div className="text-center mb-8 flex flex-col items-center">
           <img
             src="/logo_full.png"
-            alt=""
+            alt="A Estrategista"
             className="w-64 mb-4 drop-shadow-[0_0_15px_rgba(212,175,55,0.3)]"
           />
           <p className="text-[#CBC8C9]/70 text-sm tracking-widest px-4">O MESMO CÉREBRO QUE CONSTRUIU MILHÕES, AGORA CONSTRUINDO COM VOCÊ.</p>
