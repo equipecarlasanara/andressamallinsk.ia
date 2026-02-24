@@ -668,15 +668,16 @@ ESTRATEGISTA_SYSTEM_INSTRUCTION = """Você é a "Estrategista Digital", mentorad
 COMPORTAMENTO DE ELITE (PROIBIDO ROBOTISMO):
 1. **ZERO SAUDAÇÕES**: Se o papo já começou, não diga "Olá", "Tudo bem" ou "Seja bem-vinda". Vá direto para a próxima pergunta ou conselho.
 2. **NÃO SEJA CHATBOT**: Não use frases padrão como "Entendo seu ponto", "Que interessante". Aja como uma mentora real que não tem tempo a perder.
-3. **MEMÓRIA DE FERRO**: Se a Leoa já deu o nome, não pergunte de novo. Se já respondeu o nicho, pule. Analise o histórico e pergunte APENAS o que falta.
+3. **MEMÓRIA DE FERRO**: Analise o histórico e pergunte APENAS o que falta. Se a Leoa deu uma resposta longa que já cobre vários pontos, pule para o próximo.
 
-FLUXO DO RAIO-X (40 PONTOS):
-- Faça UMA pergunta por vez. Curta e seca.
-- Se a resposta da Leoa for completa, pule os itens correspondentes e vá para o próximo gargalo.
-- Lista de Referência: 1-10 (Fundação), 11-14 (Financeiro), 15-25 (Venda/Insta), 26-40 (Mentalidade/Gargalos).
+FLUXO DO RAIO-X (ALERTA DE LOOP):
+- Faça no máximo 5 perguntas estratégicas. NÃO peça detalhes infinitos.
+- Se você já sabe o Nome, o Nicho e o Cenário Atual (Gargalo), você DEVE finalizar.
+- Se a resposta for "só indicação" ou algo similar, entenda que o gargalo é a falta de escala/atração ativa. Prossiga para a meta e finalize.
 
-RESUMO E GATILHO:
-Ao concluir, envie exatamente:
+REGRAS DE OURO PARA FINALIZAR:
+Assim que tiver as informações básicas, você DEVE enviar exatamente este bloco (não invente):
+
 "DIAGNÓSTICO CONCLUÍDO!
 Então (Nome), seu negócio é (Nicho/Modelo) e hoje seu cenário atual é (Resumo direto). Você deseja chegar em (Meta) em (Prazo).
 
@@ -703,7 +704,17 @@ async def handle_unified_chat(chat_msg: ChatMessage, user_id: str):
         
         # Recuperar histórico do banco
         history_doc = await db.chat_history.find_one({"session_id": session_id})
-        history = history_doc.get("history", []) if history_doc else []
+        history = []
+        if history_doc:
+            # D1 pode retornar o histórico como string JSON ou como lista
+            raw_history = history_doc.get("history", [])
+            if isinstance(raw_history, str):
+                try:
+                    history = json.loads(raw_history)
+                except:
+                    history = []
+            else:
+                history = raw_history
         
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
@@ -711,13 +722,15 @@ async def handle_unified_chat(chat_msg: ChatMessage, user_id: str):
             system_message=ESTRATEGISTA_SYSTEM_INSTRUCTION,
             history=history
         )
-        chat.with_model("gemini", "gemini-2.0-flash")
+        chat.with_model("gemini", "gemini-1.5-flash")
         
         message = UserMessage(text=chat_msg.message)
         response = await chat.send_message(message)
         
         # Salvar histórico atualizado
-        new_history = chat.history + [
+        # Importante: Garantir que não estamos duplicando a última mensagem se o SDK já adicionou
+        # O LlmChat.send_message atual não parece gerenciar self.history automaticamente de forma persistente
+        new_history = history + [
             {"role": "user", "parts": [chat_msg.message]},
             {"role": "model", "parts": [response]}
         ]
