@@ -58,7 +58,7 @@ export default function PhotoshootCreator() {
 
       const response = await axios.post(
         `${API}/ai/generate-photoshoot`,
-        { prompt, numImages: imagesToGenerate, reference_images: [imagePayload.base64] },
+        { prompt, numImages: imagesToGenerate, baseImage: imagePayload },
         { ...getAuthHeaders(), timeout: 300000 } // 5 min timeout para múltiplas imagens
       );
 
