@@ -76,7 +76,7 @@ export default function GoalsDashboard() {
   useEffect(() => {
     requestNotificationPermission();
     loadData();
-  }, []);
+  }, [loadData]);
 
   const loadData = async () => {
     try {
