@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { TrendingUp, DollarSign, CheckCircle, Plus, Edit2, Trash2, X, Calendar, User } from 'lucide-react';
 
@@ -41,16 +41,16 @@ export default function GoalsDashboard() {
   const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const currentMonth = monthNames[new Date().getMonth()];
   const currentYear = new Date().getFullYear();
-  const weekStart = getCurrentWeekStart();
+  const weekStart = useMemo(() => getCurrentWeekStart(), []);
 
   // Sistema de notificações push para follow-up
-  const requestNotificationPermission = async () => {
+  const requestNotificationPermission = useCallback(async () => {
     if ('Notification' in window && Notification.permission === 'default') {
       await Notification.requestPermission();
     }
-  };
+  }, []);
 
-  const checkFollowUpNotifications = (leadsData) => {
+  const checkFollowUpNotifications = useCallback((leadsData) => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
     const today = new Date().toISOString().split('T')[0];
@@ -71,14 +71,14 @@ export default function GoalsDashboard() {
         localStorage.setItem(notificationKey, 'true');
       }
     });
-  };
+  }, []);
 
   useEffect(() => {
     requestNotificationPermission();
     loadData();
-  }, [loadData]);
+  }, [requestNotificationPermission, loadData]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [goalRes, actionsRes, leadsRes] = await Promise.all([
         axios.get(`${API}/goals/current`, getAuthHeaders()),
@@ -95,7 +95,7 @@ export default function GoalsDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [weekStart, checkFollowUpNotifications]);
 
   const handleCreateGoal = async () => {
     try {
