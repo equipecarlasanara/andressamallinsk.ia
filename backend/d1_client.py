@@ -123,8 +123,6 @@ class D1Client:
     def leads(self): return TableProxy(self, "leads")
     @property
     def content_items(self): return TableProxy(self, "content_items")
-    @property
-    def chat_history(self): return TableProxy(self, "chat_history")
 
 class TableProxy:
     def __init__(self, client: D1Client, table_name: str):

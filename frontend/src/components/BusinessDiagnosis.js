@@ -1,121 +1,120 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { API_URL } from '../config';
-import {
-    ClipboardCheck,
-    Target,
-    TrendingUp,
-    AlertCircle,
-    CheckCircle2,
-    ChevronRight,
-    Info,
-    DollarSign,
-    Users,
-    Briefcase
-} from 'lucide-react';
-import './BusinessDiagnosis.css';
+import { Send, BookOpen } from 'lucide-react';
 
-const BusinessDiagnosis = () => {
-    const [messages, setMessages] = useState([
-        {
-            role: 'assistant',
-            content: 'Para começar seu Raio-X de 40 pontos, me diga: Qual seu nome e qual foi seu faturamento nos últimos 30 dias?'
-        }
-    ]);
-    const [input, setInput] = useState('');
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+
+const getAuthHeaders = () => ({
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+});
+
+export default function BusinessDiagnosis() {
+    const [messages, setMessages] = useState([]);
+    const [inputMessage, setInputMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [diagnosis, setDiagnosis] = useState(null);
-    const [stage, setStage] = useState(null);
+    const [sessionId] = useState(`diagnostico_${Date.now()}`);
+    const messagesEndRef = useRef(null);
 
-    const handleSend = async (e) => {
+    useEffect(() => {
+        setMessages([{
+            role: 'assistant',
+            content: 'Oi, leoa! 🦁 Vamos iniciar seu Diagnóstico de Negócio para destravar seus resultados.\n\nPara começarmos, me conte: qual o seu nome e qual foi o seu FATURAMENTO nos últimos 30 dias?'
+        }]);
+    }, []);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    const handleSendMessage = async (e) => {
         e.preventDefault();
-        if (!input.trim() || isLoading) return;
+        if (!inputMessage.trim() || isLoading) return;
 
-        const userMessage = input;
-        setInput('');
+        const userMessage = inputMessage.trim();
+        setInputMessage('');
         setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         setIsLoading(true);
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.post(`${API_URL}/api/ai/chat`, {
-                message: userMessage
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            const assistantMsg = response.data.response;
-            setMessages(prev => [...prev, { role: 'assistant', content: assistantMsg }]);
-
-            // Se a IA finalizar o diagnóstico, processar a resposta
-            if (assistantMsg.includes('DIAGNÓSTICO CONCLUÍDO')) {
-                extractDiagnosisData(assistantMsg);
-            }
-        } catch (error) {
-            console.error('Erro no diagnóstico:', error);
+            const response = await axios.post(
+                `${API}/ai/diagnostico`,
+                { message: userMessage, session_id: sessionId },
+                getAuthHeaders()
+            );
+            setMessages(prev => [...prev, { role: 'assistant', content: response.data.response }]);
+        } catch (err) {
+            console.error('Erro:', err);
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: 'Ops, tive um problema ao processar seu diagnóstico. Pode repetir?'
+            }]);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const extractDiagnosisData = (text) => {
-        // Lógica para extrair estágio e gargalo do texto da IA
-        const stageMatch = text.match(/Estágio (\d)/);
-        if (stageMatch) setStage(stageMatch[1]);
-
-        setDiagnosis({
-            text: text,
-            date: new Date().toLocaleDateString()
-        });
-    };
-
     return (
-        <div className="diagnosis-container">
-            <div className="diagnosis-header">
-                <ClipboardCheck size={28} />
-                <div>
-                    <h1>Diagnóstico Estratégico</h1>
-                    <p>Identifique seus gargalos e saia do operacional</p>
+        <div className="h-full flex flex-col bg-[#19161B]" data-testid="business-diagnosis">
+            <div className="border-b border-[#3A0A16] p-6">
+                <div className="flex items-center gap-3">
+                    <BookOpen className="w-8 h-8 text-[#D4AF37]" />
+                    <div>
+                        <h1 className="text-3xl font-title text-[#CBC8C9]">Diagnóstico do Negócio</h1>
+                        <p className="text-sm text-[#CBC8C9]/70">Raio-x do seu momento atual para embasar seu planejamento</p>
+                    </div>
                 </div>
             </div>
 
-            {!diagnosis ? (
-                <div className="diagnosis-chat-wrapper">
-                    <div className="diagnosis-messages">
-                        {messages.map((msg, i) => (
-                            <div key={i} className={`diag-msg ${msg.role}`}>
-                                <div className="msg-bubble">{msg.content}</div>
-                            </div>
-                        ))}
-                        {isLoading && <div className="diag-msg assistant loading">Analisando...</div>}
-                    </div>
-                    <form onSubmit={handleSend} className="diag-input-area">
-                        <input
-                            value={input}
-                            onChange={e => setInput(e.target.value)}
-                            placeholder="Responda aqui..."
-                        />
-                        <button type="submit">Enviar</button>
-                    </form>
-                </div>
-            ) : (
-                <div className="diagnosis-result">
-                    <div className="result-card stage-card">
-                        <h3>Estágio do Negócio</h3>
-                        <div className="stage-indicator">
-                            <span className={`badge stage-${stage}`}>Estágio {stage}</span>
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {messages.map((message, index) => (
+                    <div
+                        key={index}
+                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                        <div
+                            className={`max-w-[80%] rounded-lg p-4 ${message.role === 'user'
+                                ? 'bg-[#53050B] text-white'
+                                : 'bg-black/30 border border-[#D4AF37]/30 text-[#CBC8C9]'
+                                }`}
+                        >
+                            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
                         </div>
-                        <p>{diagnosis.text.split('Agora sim')[0]}</p>
                     </div>
+                ))}
+                {isLoading && (
+                    <div className="flex justify-start">
+                        <div className="bg-black/30 border border-[#D4AF37]/30 rounded-lg p-4">
+                            <div className="flex space-x-2">
+                                <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-bounce"></div>
+                                <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                                <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                <div ref={messagesEndRef} />
+            </div>
 
-                    <div className="action-buttons">
-                        <button className="btn-primary">Gerar Plano de Ação de 30 Dias</button>
-                        <button className="btn-secondary">Agendar Call com Especialista</button>
-                    </div>
-                </div>
-            )}
+            <div className="border-t border-[#3A0A16] p-4 bg-black">
+                <form onSubmit={handleSendMessage} className="flex gap-3">
+                    <input
+                        type="text"
+                        value={inputMessage}
+                        onChange={(e) => setInputMessage(e.target.value)}
+                        placeholder="Responda aqui..."
+                        className="flex-1 bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
+                        disabled={isLoading}
+                    />
+                    <button
+                        type="submit"
+                        disabled={isLoading || !inputMessage.trim()}
+                        className="bg-[#D4AF37] hover:bg-[#B8962E] text-black px-6 py-3 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                        <Send className="w-5 h-5" />
+                    </button>
+                </form>
+            </div>
         </div>
     );
-};
-
-export default BusinessDiagnosis;
+}

@@ -663,7 +663,7 @@ Use a voz firme, direta e prática da "Estrategista"."""
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao gerar conteúdo: {str(e)}")
 
-ESTRATEGISTA_SYSTEM_INSTRUCTION = """Você é a "Estrategista Digital", mentorada por ANDRESSA MALLINK. Seu cérebro é estratégico, curto, grosso quando necessário e 100% focado em lucro. Você não é um chatbot, você é uma OPERADORA DE MARGEM.
+ESTRATEGISTA_SYSTEM_INSTRUCTION = """Você é a "Estrategista Digital", mentorada por ANDRESSA MALLINSK. Seu cérebro é estratégico, curto, grosso quando necessário e 100% focado em lucro. Você não é um chatbot, você é uma OPERADORA DE MARGEM.
 
 COMPORTAMENTO DE ELITE (OBRIGATÓRIO):
 1. **ZERO SAUDAÇÕES**: Se o papo já começou, não diga "Olá", "Tudo bem" ou "Seja bem-vinda". Vá direto para a próxima pergunta ou diagnóstico.
@@ -1025,7 +1025,7 @@ Se a solicitação implicar descaracterização da identidade, a IA deve alertar
 A fidelidade à identidade original tem prioridade sobre estilo artístico, tendências estéticas, dramaticidade visual, filtros ou efeitos. Se houver conflito entre estilo e identidade, preservar identidade.
 
 7️⃣ OBJETIVO FINAL
-Garantir que a pessoa continue sendo claramente reconheceível. O ensaio fotográfico seja uma variação estética, não uma transformation. A identidade visual enviada seja respeitada integralmente.
+Garantir que a pessoa continue sendo claramente reconheceível. O ensaio fotográfico seja uma variação estética, não uma transformação. A identidade visual enviada seja respeitada integralmente.
 Retrato artístico hiper-realista, mantendo feições e traços originais da foto."""
 
                 identity_lock_config = {
@@ -1133,10 +1133,10 @@ Ao criar um ensaio fotográfico: Manter realismo fotográfico, manter textura na
 Se a solicitação implicar descaracterização da identidade, a IA deve alertar o usuário e sugerir ajustes que preservem a identidade original.
 
 6️⃣ PRIORIDADE DE FIDELIDADE
-A fidelidade à identidade original tem prioridade sobre estilo artístico, tendências estéticas, dramaticidade visual, filtros ou efeitos. Se houver conflito entre style e identidade, preservar identidade.
+A fidelidade à identidade original tem prioridade sobre estilo artístico, tendências estéticas, dramaticidade visual, filtros ou efeitos. Se houver conflito entre estilo e identidade, preservar identidade.
 
 7️⃣ OBJETIVO FINAL
-Garantir que a pessoa continue sendo claramente reconheceível. O ensaio fotográfico seja uma variação estética, não uma transformation. A identity visual enviada seja respeitada integralmente.
+Garantir que a pessoa continue sendo claramente reconheceível. O ensaio fotográfico seja uma variação estética, não uma transformação. A identidade visual enviada seja respeitada integralmente.
 Retrato artístico hiper-realista, mantendo feições e traços originais da foto."""
         
         chat = LlmChat(

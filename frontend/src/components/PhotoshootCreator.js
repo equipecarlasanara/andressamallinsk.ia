@@ -37,7 +37,7 @@ export default function PhotoshootCreator() {
       }
       return;
     }
-
+    
     setIsLoading(true);
     setGeneratedImages([]);
     setError(null);
@@ -61,7 +61,7 @@ export default function PhotoshootCreator() {
         { prompt, numImages: imagesToGenerate, baseImage: imagePayload },
         { ...getAuthHeaders(), timeout: 300000 } // 5 min timeout para múltiplas imagens
       );
-
+      
       setGeneratedImages(response.data.images || []);
       setDailyCount(prev => prev + (response.data.total || 0));
       setProgress(100);

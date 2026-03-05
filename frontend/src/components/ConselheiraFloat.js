@@ -143,6 +143,7 @@ export default function ConselheiraFloat() {
               style={{ transform: 'translateY(2px)' }}
             />
           </div>
+          <span className="font-semibold text-[#CBC8C9]"></span>
         </div>
         <div className="flex items-center gap-1">
           {messages.length > 1 && (
