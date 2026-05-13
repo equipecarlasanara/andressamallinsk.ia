@@ -7,3 +7,6 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Cloudflare Pages usa este mesmo arquivo.
+# O Worker (backend) fica em /worker e é deployado separadamente via wrangler.

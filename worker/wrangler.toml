@@ -1,0 +1,9 @@
+name = "estrategista-api"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "andressamallinsk_ia_db"
+database_id = "fe483dca-aea2-4303-a534-7daaea249eab"
