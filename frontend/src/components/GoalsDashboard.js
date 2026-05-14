@@ -73,11 +73,6 @@ export default function GoalsDashboard() {
     });
   }, []);
 
-  useEffect(() => {
-    requestNotificationPermission();
-    loadData();
-  }, [requestNotificationPermission, loadData]);
-
   const loadData = useCallback(async () => {
     try {
       const [goalRes, actionsRes, leadsRes] = await Promise.all([
@@ -96,6 +91,11 @@ export default function GoalsDashboard() {
       setLoading(false);
     }
   }, [weekStart, checkFollowUpNotifications]);
+
+  useEffect(() => {
+    requestNotificationPermission();
+    loadData();
+  }, [requestNotificationPermission, loadData]);
 
   const handleCreateGoal = async () => {
     try {
