@@ -508,6 +508,68 @@ async function handleRequest(request, env) {
     return json({ success: false, message: "Integração Google Calendar não disponível nesta versão." });
   }
 
+
+  // ---- PLANO DE AÇÃO INDIVIDUAL ----
+
+  if (path === "/action-plan" && method === "POST") {
+    const userId = await authenticate(request, env);
+    if (!userId) return error("Token inválido", 401);
+    try {
+      const body = await request.json();
+      const { filename, content: planBase64, is_pdf } = body;
+      if (!planBase64) return error("Conteúdo do plano é obrigatório");
+
+      let extractedText = planBase64;
+
+      // Se for PDF, usar Gemini para extrair o texto
+      if (is_pdf) {
+        const geminiBody = {
+          contents: [{
+            role: "user",
+            parts: [
+              { inlineData: { mimeType: "application/pdf", data: planBase64 } },
+              { text: "Extraia TODO o conteúdo textual deste PDF de plano de ação. Mantenha a estrutura, títulos, listas e informações exatamente como estão. Não resuma — transcreva tudo." }
+            ]
+          }]
+        };
+        const geminiRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${env.GEMINI_API_KEY}`,
+          { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(geminiBody) }
+        );
+        const geminiData = await geminiRes.json();
+        extractedText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "Conteúdo não pôde ser extraído";
+      }
+
+      const id = uuid();
+      const ts = now();
+
+      // Apaga plano anterior e insere novo
+      await dbRun(env, "DELETE FROM action_plans WHERE user_id = ?", [userId]);
+      await dbRun(env,
+        "INSERT INTO action_plans (id, user_id, filename, content, uploaded_at) VALUES (?, ?, ?, ?, ?)",
+        [id, userId, filename || "plano.pdf", extractedText, ts]
+      );
+
+      return json({ success: true, id, uploaded_at: ts, message: "Plano de ação salvo com sucesso!" });
+    } catch (e) {
+      return error(`Erro ao salvar plano: ${e.message}`, 500);
+    }
+  }
+
+  if (path === "/action-plan" && method === "GET") {
+    const userId = await authenticate(request, env);
+    if (!userId) return error("Token inválido", 401);
+    const [plan] = await dbQuery(env, "SELECT id, user_id, filename, uploaded_at FROM action_plans WHERE user_id = ?", [userId]);
+    return json(plan || null);
+  }
+
+  if (path === "/action-plan" && method === "DELETE") {
+    const userId = await authenticate(request, env);
+    if (!userId) return error("Token inválido", 401);
+    await dbRun(env, "DELETE FROM action_plans WHERE user_id = ?", [userId]);
+    return json({ success: true });
+  }
+
   // ---- AI ROUTES ----
 
   if (path === "/ai/build-funnel" && method === "POST") {
@@ -544,12 +606,18 @@ FORMATO OBRIGATÓRIO (Markdown):
     if (!userId) return error("Token inválido", 401);
     try {
       const body = await request.json();
-      const prompt = `Para o nicho de "${body.niche}", gere uma lista de pelo menos 50 temas de conteúdo estratégicos.
+      // Carregar plano de ação para personalizar temas
+      const [planDoc] = await dbQuery(env, "SELECT content FROM action_plans WHERE user_id = ?", [userId]);
+      const planContext = planDoc
+        ? `\n\nCONTEXTO DO PLANO DE AÇÃO DA MENTORADA:\n${planDoc.content.slice(0, 2000)}\n\nGere os temas alinhados com o posicionamento, nicho e objetivos descritos neste plano.`
+        : "";
+
+      const prompt = `Para o nicho de "${body.niche}", gere uma lista de pelo menos 50 temas de conteúdo estratégicos.${planContext}
 Responda APENAS com JSON puro (sem markdown, sem explicações):
 {"reels":[{"title":"...","description":"..."}],"carrossel":[...],"postEstatico":[...],"stories":[...],"ads":[...]}
 Cada chave deve ter pelo menos 10 objetos. Siga a metodologia Andressa Mallinsk.`;
 
-      const { text } = await callGemini(env.GEMINI_API_KEY, "gemini-2.0-flash", "Você é uma estrategista de conteúdo.", [], prompt);
+      const { text } = await callGemini(env.GEMINI_API_KEY, "gemini-2.0-flash", "Você é uma estrategista de conteúdo da Andressa Mallinsk. Use o plano de ação da mentorada para personalizar os temas.", [], prompt);
       const match = text.match(/\{[\s\S]*\}/);
       if (!match) throw new Error("Formato inválido");
       return json(JSON.parse(match[0]));
@@ -594,7 +662,19 @@ Finalize com CTA direto para DM. Voz firme e direta da Estrategista.`;
       const [histDoc] = await dbQuery(env, "SELECT history FROM chat_history WHERE session_id = ?", [sessionId]);
       const history = histDoc ? JSON.parse(histDoc.history) : [];
 
-      const { text: response } = await callGemini(env.GEMINI_API_KEY, "gemini-2.0-flash", ESTRATEGISTA_SYSTEM, history, body.message);
+      // Carregar plano de ação da mentorada para personalizar o contexto
+      const [planDoc] = await dbQuery(env, "SELECT content, filename FROM action_plans WHERE user_id = ?", [userId]);
+      let systemPrompt = ESTRATEGISTA_SYSTEM;
+      if (planDoc) {
+        systemPrompt += `\n\n====== PLANO DE AÇÃO INDIVIDUAL DA MENTORADA ======\nArquivo: ${planDoc.filename}\n\n${planDoc.content}\n====== FIM DO PLANO ======\n\nIMPORTANTE: Use este plano como base para TODAS as suas respostas. Quando a mentorada chegar pela primeira vez ou enviar o plano, pergunte: "A partir do seu plano de ação, gostaria de receber as ações desta semana?" Se ela confirmar, gere as ações usando o marcador PROJETAR_TAREFA.`;
+      } else if (!history.length) {
+        systemPrompt += "\n\nA mentorada ainda não enviou o Plano de Ação Individual. Na primeira mensagem, oriente: 'Para eu te ajudar de forma personalizada, faça o upload do seu Plano de Ação Individual (PDF) clicando no botão 📎 acima.'";
+      }
+
+      // Passar PDF do plano para o Gemini se for a primeira mensagem com o plano
+      const planBase64 = body.plan_pdf || null;
+
+      const { text: response } = await callGemini(env.GEMINI_API_KEY, "gemini-2.0-flash", systemPrompt, history, body.message, planBase64);
 
       // Atualizar histórico
       const newHistory = [...history,

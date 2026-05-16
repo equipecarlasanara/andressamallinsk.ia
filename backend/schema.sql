@@ -65,3 +65,13 @@ CREATE TABLE IF NOT EXISTS chat_history (
     created_at TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+-- Plano de Ação Individual por mentorada (adicionado em 16/05/2026)
+CREATE TABLE IF NOT EXISTS action_plans (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL UNIQUE,
+    filename TEXT NOT NULL,
+    content TEXT NOT NULL,
+    uploaded_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
