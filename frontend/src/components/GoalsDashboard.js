@@ -1,609 +1,250 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
-import { TrendingUp, DollarSign, CheckCircle, Plus, Edit2, Trash2, X, Calendar, User } from 'lucide-react';
+import { Plus, CheckCircle, Circle, Trash2, TrendingUp, Target, Users, Edit2 } from 'lucide-react';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-const getAuthHeaders = () => ({
-  headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-});
-
-const getCurrentWeekStart = () => {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(now.setDate(diff));
-  return monday.toISOString().split('T')[0];
-};
-
-const KANBAN_STAGES = [
-  { id: 'novo', label: 'Novo Lead', color: 'bg-blue-900/30 border-blue-500' },
-  { id: 'contato', label: 'Em Contato', color: 'bg-yellow-900/30 border-yellow-500' },
-  { id: 'negociacao', label: 'Negociação', color: 'bg-purple-900/30 border-purple-500' },
-  { id: 'fechado', label: 'Fechado', color: 'bg-green-900/30 border-green-500' }
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const auth = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const STAGES = [
+  { id: 'novo', label: 'Novo Lead', color: '#1E3A5F', accent: '#4A9EE0' },
+  { id: 'contato', label: 'Em Contato', color: '#3A2E00', accent: '#D4A800' },
+  { id: 'negociacao', label: 'Negociação', color: '#2A1A3E', accent: '#9B6FE0' },
+  { id: 'fechado', label: 'Fechado', color: '#0A2E1A', accent: '#3ECF8E' },
 ];
 
+function weekStart() {
+  const d = new Date(); const day = d.getDay();
+  d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
+  return d.toISOString().split('T')[0];
+}
+
 export default function GoalsDashboard() {
-  const [currentGoal, setCurrentGoal] = useState(null);
-  const [weeklyActions, setWeeklyActions] = useState([]);
+  const [goal, setGoal] = useState(null);
+  const [actions, setActions] = useState([]);
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showGoalModal, setShowGoalModal] = useState(false);
-  const [showActionModal, setShowActionModal] = useState(false);
-  const [showLeadModal, setShowLeadModal] = useState(false);
-  const [showActionDetail, setShowActionDetail] = useState(null);
-  const [showLeadDetail, setShowLeadDetail] = useState(null);
+  const [tab, setTab] = useState('metas');
+  const [newAction, setNewAction] = useState('');
+  const [editGoal, setEditGoal] = useState(false);
   const [goalForm, setGoalForm] = useState({ monthly_target: '', current_revenue: '' });
-  const [actionForm, setActionForm] = useState({ title: '', description: '' });
-  const [leadForm, setLeadForm] = useState({ name: '', phone: '', stage: 'novo', notes: '', followup_date: '' });
+  const [newLead, setNewLead] = useState({ name: '', phone: '', stage: 'novo' });
+  const [showLeadForm, setShowLeadForm] = useState(false);
 
-  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-  const currentMonth = monthNames[new Date().getMonth()];
-  const currentYear = new Date().getFullYear();
-  const weekStart = useMemo(() => getCurrentWeekStart(), []);
+  const ws = useMemo(() => weekStart(), []);
+  const month = MONTHS[new Date().getMonth()];
+  const year = new Date().getFullYear();
 
-  // Sistema de notificações push para follow-up
-  const requestNotificationPermission = useCallback(async () => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      await Notification.requestPermission();
-    }
-  }, []);
-
-  const checkFollowUpNotifications = useCallback((leadsData) => {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
-
-    const today = new Date().toISOString().split('T')[0];
-    const leadsWithFollowUp = leadsData.filter(lead => {
-      if (!lead.followup_date) return false;
-      const followUpDate = lead.followup_date.split('T')[0];
-      return followUpDate === today;
-    });
-
-    leadsWithFollowUp.forEach(lead => {
-      const notificationKey = `followup_notified_${lead.id}_${today}`;
-      if (!localStorage.getItem(notificationKey)) {
-        new Notification('🔔 Follow-up Hoje!', {
-          body: `Lead: ${lead.name}\nTelefone: ${lead.phone}`,
-          icon: '/favicon.ico',
-          tag: lead.id
-        });
-        localStorage.setItem(notificationKey, 'true');
-      }
-    });
-  }, []);
-
-  const loadData = useCallback(async () => {
+  const load = useCallback(async () => {
     try {
-      const [goalRes, actionsRes, leadsRes] = await Promise.all([
-        axios.get(`${API}/goals/current`, getAuthHeaders()),
-        axios.get(`${API}/weekly-actions?week_start=${weekStart}`, getAuthHeaders()),
-        axios.get(`${API}/leads`, getAuthHeaders())
+      const [g, a, l] = await Promise.all([
+        axios.get(`${API}/goals/current`, auth()),
+        axios.get(`${API}/weekly-actions?week_start=${ws}`, auth()),
+        axios.get(`${API}/leads`, auth()),
       ]);
-      setCurrentGoal(goalRes.data);
-      setWeeklyActions(actionsRes.data);
-      const leadsData = leadsRes.data || [];
-      setLeads(leadsData);
-      checkFollowUpNotifications(leadsData);
-    } catch (err) {
-      console.error('Erro ao carregar dados:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [weekStart, checkFollowUpNotifications]);
+      setGoal(g.data); setActions(a.data || []); setLeads(l.data || []);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, [ws]);
 
-  useEffect(() => {
-    requestNotificationPermission();
-    loadData();
-  }, [requestNotificationPermission, loadData]);
+  useEffect(() => { load(); }, [load]);
 
-  const handleCreateGoal = async () => {
+  const saveGoal = async () => {
     try {
-      const response = await axios.post(
-        `${API}/goals`,
-        {
-          monthly_target: parseFloat(goalForm.monthly_target),
-          current_revenue: parseFloat(goalForm.current_revenue || 0),
-          month: currentMonth,
-          year: currentYear
-        },
-        getAuthHeaders()
-      );
-      setCurrentGoal(response.data);
-      setShowGoalModal(false);
-      setGoalForm({ monthly_target: '', current_revenue: '' });
-    } catch (err) {
-      alert('Erro ao criar meta: ' + (err.response?.data?.detail || err.message));
-    }
+      if (goal) {
+        const { data } = await axios.patch(`${API}/goals/${goal.id}`, { monthly_target: +goalForm.monthly_target, current_revenue: +goalForm.current_revenue }, auth());
+        setGoal(data);
+      } else {
+        const { data } = await axios.post(`${API}/goals`, { monthly_target: +goalForm.monthly_target, current_revenue: +goalForm.current_revenue || 0, month, year }, auth());
+        setGoal(data);
+      }
+      setEditGoal(false);
+    } catch (e) { alert('Erro ao salvar meta.'); }
   };
 
-  const handleUpdateGoal = async () => {
+  const addAction = async () => {
+    if (!newAction.trim()) return;
     try {
-      const response = await axios.patch(
-        `${API}/goals/${currentGoal.id}`,
-        {
-          monthly_target: parseFloat(goalForm.monthly_target),
-          current_revenue: parseFloat(goalForm.current_revenue)
-        },
-        getAuthHeaders()
-      );
-      setCurrentGoal(response.data);
-      setShowGoalModal(false);
-      setGoalForm({ monthly_target: '', current_revenue: '' });
-    } catch (err) {
-      alert('Erro ao atualizar meta: ' + (err.response?.data?.detail || err.message));
-    }
+      const { data } = await axios.post(`${API}/weekly-actions`, { title: newAction, week_start: ws }, auth());
+      setActions(a => [...a, data]); setNewAction('');
+    } catch {}
   };
 
-  const handleCreateAction = async () => {
+  const toggleAction = async (id, done) => {
     try {
-      const response = await axios.post(
-        `${API}/weekly-actions`,
-        { ...actionForm, week_start: weekStart },
-        getAuthHeaders()
-      );
-      setWeeklyActions([...weeklyActions, response.data]);
-      setShowActionModal(false);
-      setActionForm({ title: '', description: '' });
-    } catch (err) {
-      alert('Erro ao criar ação: ' + (err.response?.data?.detail || err.message));
-    }
+      const { data } = await axios.patch(`${API}/weekly-actions/${id}`, { completed: !done }, auth());
+      setActions(a => a.map(x => x.id === id ? { ...x, completed: data.completed } : x));
+    } catch {}
   };
 
-  const handleToggleAction = async (action) => {
+  const deleteAction = async (id) => {
     try {
-      const response = await axios.patch(
-        `${API}/weekly-actions/${action.id}`,
-        { completed: !action.completed },
-        getAuthHeaders()
-      );
-      setWeeklyActions(weeklyActions.map(a => a.id === action.id ? response.data : a));
-    } catch (err) {
-      console.error('Erro ao atualizar ação:', err);
-    }
+      await axios.delete(`${API}/weekly-actions/${id}`, auth());
+      setActions(a => a.filter(x => x.id !== id));
+    } catch {}
   };
 
-  const handleDeleteAction = async (actionId) => {
-    if (!window.confirm('Deseja remover esta ação?')) return;
+  const addLead = async () => {
+    if (!newLead.name || !newLead.phone) return;
     try {
-      await axios.delete(`${API}/weekly-actions/${actionId}`, getAuthHeaders());
-      setWeeklyActions(weeklyActions.filter(a => a.id !== actionId));
-    } catch (err) {
-      console.error('Erro ao deletar ação:', err);
-    }
+      const { data } = await axios.post(`${API}/leads`, newLead, auth());
+      setLeads(l => [...l, data]); setNewLead({ name: '', phone: '', stage: 'novo' }); setShowLeadForm(false);
+    } catch {}
   };
 
-  const handleCreateLead = async () => {
+  const moveLead = async (id, stage) => {
     try {
-      const response = await axios.post(`${API}/leads`, leadForm, getAuthHeaders());
-      setLeads([...leads, response.data]);
-      setShowLeadModal(false);
-      setLeadForm({ name: '', phone: '', stage: 'novo', notes: '', followup_date: '' });
-    } catch (err) {
-      alert('Erro ao criar lead: ' + (err.response?.data?.detail || err.message));
-    }
+      const { data } = await axios.patch(`${API}/leads/${id}`, { stage }, auth());
+      setLeads(l => l.map(x => x.id === id ? data : x));
+    } catch {}
   };
 
-  const handleUpdateLeadStage = async (leadId, newStage) => {
-    try {
-      const response = await axios.patch(`${API}/leads/${leadId}`, { stage: newStage }, getAuthHeaders());
-      setLeads(leads.map(l => l.id === leadId ? response.data : l));
-    } catch (err) {
-      console.error('Erro ao atualizar lead:', err);
-    }
-  };
+  const pct = goal ? Math.min(100, Math.round((goal.current_revenue / goal.monthly_target) * 100)) : 0;
+  const done = actions.filter(a => a.completed).length;
 
-  const handleDeleteLead = async (leadId) => {
-    if (!window.confirm('Deseja remover este lead?')) return;
-    try {
-      await axios.delete(`${API}/leads/${leadId}`, getAuthHeaders());
-      setLeads(leads.filter(l => l.id !== leadId));
-    } catch (err) {
-      console.error('Erro ao deletar lead:', err);
-    }
-  };
-
-  const openEditGoal = () => {
-    setGoalForm({
-      monthly_target: currentGoal?.monthly_target || '',
-      current_revenue: currentGoal?.current_revenue || ''
-    });
-    setShowGoalModal(true);
-  };
-
-  const progressPercentage = currentGoal
-    ? Math.min((currentGoal.current_revenue / currentGoal.monthly_target) * 100, 100)
-    : 0;
-
-  const remainingAmount = currentGoal
-    ? Math.max(currentGoal.monthly_target - currentGoal.current_revenue, 0)
-    : 0;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full" data-testid="loading-state">
-        <p className="text-xl">Carregando...</p>
-      </div>
-    );
-  }
+  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#555' }}>Carregando...</div>;
 
   return (
-    <div className="p-6 h-full overflow-y-auto bg-[#19161B]" data-testid="goals-dashboard">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col mb-6">
-          <img
-            src="/logo_full.png"
-            alt="Logo"
-            className="w-32 mb-2 drop-shadow-[0_0_10px_rgba(212,175,55,0.2)]"
-          />
-          <h1 className="text-4xl font-title text-[#CBC8C9]" data-testid="dashboard-title">
-            Dashboard de Metas
-          </h1>
-        </div>
+    <div style={{ height: '100%', overflowY: 'auto', padding: '28px', background: '#080808' }}>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-gradient-to-br from-[#3A0A16] to-black border border-[#53050B] rounded-lg p-4" data-testid="goal-card">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-[#D4AF37]" />
-                <h3 className="text-sm font-semibold">Meta Mensal</h3>
-              </div>
-              {currentGoal && (
-                <button onClick={openEditGoal} className="p-1 hover:bg-[#3A0A16]/50 rounded">
-                  <Edit2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-            <p className="text-2xl font-bold" style={{ color: '#D4AF37' }}>
-              R$ {currentGoal?.monthly_target?.toLocaleString('pt-BR') || '0'}
-            </p>
-            <p className="text-xs text-[#CBC8C9]/60 mt-1">{currentMonth} {currentYear}</p>
-            {!currentGoal && (
-              <button onClick={() => setShowGoalModal(true)} className="mt-2 w-full bg-[#53050B] hover:bg-red-800 text-white text-xs py-1 rounded">
-                Definir Meta
-              </button>
-            )}
-          </div>
-
-          <div className="bg-gradient-to-br from-green-900/20 to-black border border-green-700 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="w-5 h-5 text-green-500" />
-              <h3 className="text-sm font-semibold">Faturamento Atual</h3>
-            </div>
-            <p className="text-2xl font-bold text-green-500">
-              R$ {currentGoal?.current_revenue?.toLocaleString('pt-BR') || '0'}
-            </p>
-            <p className="text-xs text-[#CBC8C9]/60 mt-1">{progressPercentage.toFixed(0)}% da meta</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-red-900/20 to-black border border-red-700 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-5 h-5 text-red-400" />
-              <h3 className="text-sm font-semibold">Falta</h3>
-            </div>
-            <p className="text-2xl font-bold text-red-400">
-              R$ {remainingAmount.toLocaleString('pt-BR')}
-            </p>
-            <p className="text-xs text-[#CBC8C9]/60 mt-1">Para atingir a meta</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-[#3A0A16] to-black border border-[#53050B] rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <CheckCircle className="w-5 h-5 text-[#D4AF37]" />
-              <h3 className="text-sm font-semibold">Ações Concluídas</h3>
-            </div>
-            <p className="text-2xl font-bold" style={{ color: '#D4AF37' }}>
-              {weeklyActions.filter(a => a.completed).length} / {weeklyActions.length}
-            </p>
-            <p className="text-xs text-[#CBC8C9]/60 mt-1">Esta semana</p>
-          </div>
-        </div>
-
-        {currentGoal && (
-          <div className="mb-6 bg-black/30 border border-[#3A0A16] rounded-lg p-4">
-            <h3 className="text-sm font-semibold mb-2">Progresso da Meta</h3>
-            <div className="w-full bg-[#19161B] rounded-full h-3">
-              <div
-                className="bg-gradient-to-r from-green-600 to-green-400 h-3 rounded-full transition-all duration-500"
-                style={{ width: `${progressPercentage}%` }}
-              ></div>
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-black/30 border border-[#3A0A16] rounded-lg p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-title text-[#CBC8C9]">Ações da Semana</h2>
-              <button onClick={() => setShowActionModal(true)} className="flex items-center bg-[#53050B] hover:bg-red-800 text-white px-3 py-1 rounded text-sm">
-                <Plus className="w-4 h-4 mr-1" />
-                Nova
-              </button>
-            </div>
-
-            {weeklyActions.length === 0 ? (
-              <p className="text-center text-[#CBC8C9]/50 py-4 text-sm">Nenhuma ação cadastrada</p>
-            ) : (
-              <div className="space-y-2">
-                {weeklyActions.slice(0, 5).map((action) => (
-                  <div
-                    key={action.id}
-                    className="flex items-start gap-2 p-2 bg-[#19161B] border border-[#3A0A16] rounded hover:border-[#53050B]/50 cursor-pointer"
-                    onClick={() => setShowActionDetail(action)}
-                  >
-                    <button onClick={(e) => { e.stopPropagation(); handleToggleAction(action); }} className="mt-1">
-                      {action.completed ? (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <div className="w-4 h-4 border-2 border-[#3A0A16] rounded-full"></div>
-                      )}
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <h4 className={`text-sm ${action.completed ? 'line-through text-[#CBC8C9]/50' : 'text-[#CBC8C9]'}`}>
-                        {action.title}
-                      </h4>
-                      {action.description && (
-                        <p className="text-xs text-[#CBC8C9]/50 truncate">{action.description}</p>
-                      )}
-                    </div>
-                    <button onClick={(e) => { e.stopPropagation(); handleDeleteAction(action.id); }} className="p-1 hover:bg-[#3A0A16]/50 rounded">
-                      <Trash2 className="w-3 h-3 text-red-400" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="bg-black/30 border border-[#3A0A16] rounded-lg p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-title text-[#CBC8C9]">Leads Recentes</h2>
-              <button onClick={() => setShowLeadModal(true)} className="flex items-center bg-[#53050B] hover:bg-red-800 text-white px-3 py-1 rounded text-sm">
-                <Plus className="w-4 h-4 mr-1" />
-                Novo Lead
-              </button>
-            </div>
-
-            {leads.length === 0 ? (
-              <p className="text-center text-[#CBC8C9]/50 py-4 text-sm">Nenhum lead cadastrado</p>
-            ) : (
-              <div className="space-y-2">
-                {leads.slice(0, 5).map((lead) => (
-                  <div
-                    key={lead.id}
-                    className="flex items-center gap-2 p-2 bg-[#19161B] border border-[#3A0A16] rounded hover:border-[#53050B]/50 cursor-pointer"
-                    onClick={() => setShowLeadDetail(lead)}
-                  >
-                    <User className="w-4 h-4 text-[#D4AF37]" />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm text-[#CBC8C9] truncate">{lead.name}</h4>
-                      <p className="text-xs text-[#CBC8C9]/60">{KANBAN_STAGES.find(s => s.id === lead.stage)?.label}</p>
-                    </div>
-                    {lead.followup_date && (
-                      <Calendar className="w-4 h-4 text-yellow-500" />
-                    )}
-                    <button onClick={(e) => { e.stopPropagation(); handleDeleteLead(lead.id); }} className="p-1 hover:bg-[#3A0A16]/50 rounded">
-                      <Trash2 className="w-3 h-3 text-red-400" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-black/30 border border-[#3A0A16] rounded-lg p-4">
-          <h2 className="text-xl font-title text-[#CBC8C9] mb-4">CRM - Kanban de Leads</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {KANBAN_STAGES.map((stage) => (
-              <div
-                key={stage.id}
-                className={`${stage.color} border-2 rounded-lg p-3`}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  const leadId = e.dataTransfer.getData('leadId');
-                  if (leadId) handleUpdateLeadStage(leadId, stage.id);
-                }}
-              >
-                <h3 className="text-sm font-semibold mb-3 text-center">{stage.label}</h3>
-                <div className="space-y-2 min-h-[200px]">
-                  {leads.filter(l => l.stage === stage.id).map((lead) => (
-                    <div
-                      key={lead.id}
-                      draggable
-                      onDragStart={(e) => e.dataTransfer.setData('leadId', lead.id)}
-                      onClick={() => setShowLeadDetail(lead)}
-                      className="bg-[#19161B] border border-[#3A0A16] rounded p-2 cursor-pointer hover:border-[#53050B] transition-colors"
-                    >
-                      <p className="text-sm font-semibold text-[#CBC8C9]">{lead.name}</p>
-                      <p className="text-xs text-[#CBC8C9]/60">{lead.phone}</p>
-                      {lead.followup_date && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <Calendar className="w-3 h-3 text-yellow-500" />
-                          <p className="text-xs text-yellow-500">{new Date(lead.followup_date).toLocaleDateString('pt-BR')}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Header */}
+      <div style={{ marginBottom: '28px' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: '600', color: '#E0E0E0', letterSpacing: '-0.02em' }}>Dashboard</h1>
+        <p style={{ color: '#555', fontSize: '13px', marginTop: '4px' }}>{month} {year}</p>
       </div>
 
-      {showGoalModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#19161B] border border-[#3A0A16] rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold">{currentGoal ? 'Editar Meta' : 'Nova Meta Mensal'}</h3>
-              <button onClick={() => { setShowGoalModal(false); setGoalForm({ monthly_target: '', current_revenue: '' }); }} className="p-1 hover:bg-[#3A0A16]/50 rounded">
-                <X className="w-5 h-5" />
-              </button>
+      {/* Cards de métricas */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '28px' }}>
+        {[
+          { icon: Target, label: 'Meta do Mês', value: goal ? `R$ ${goal.monthly_target?.toLocaleString('pt-BR')}` : '—', accent: '#C0392B' },
+          { icon: TrendingUp, label: 'Faturamento Atual', value: goal ? `R$ ${goal.current_revenue?.toLocaleString('pt-BR')}` : '—', accent: '#3ECF8E' },
+          { icon: Users, label: 'Total de Leads', value: leads.length, accent: '#9B6FE0' },
+        ].map(({ icon: Icon, label, value, accent }) => (
+          <div key={label} style={{ background: '#111', border: '1px solid #1A1A1A', borderRadius: '12px', padding: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <Icon size={15} style={{ color: accent }} />
+              <span style={{ color: '#555', fontSize: '12px' }}>{label}</span>
             </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Meta Mensal (R$)</label>
-                <input type="number" value={goalForm.monthly_target} onChange={(e) => setGoalForm({ ...goalForm, monthly_target: e.target.value })} className="w-full bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:ring-2 focus:ring-[#53050B]" placeholder="50000" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Faturamento Atual (R$)</label>
-                <input type="number" value={goalForm.current_revenue} onChange={(e) => setGoalForm({ ...goalForm, current_revenue: e.target.value })} className="w-full bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:ring-2 focus:ring-[#53050B]" placeholder="15000" />
-              </div>
-              <button onClick={currentGoal ? handleUpdateGoal : handleCreateGoal} className="w-full bg-[#53050B] hover:bg-red-800 text-white py-3 rounded-lg">
-                {currentGoal ? 'Atualizar' : 'Criar Meta'}
-              </button>
-            </div>
+            <p style={{ fontSize: '24px', fontWeight: '700', color: '#E0E0E0' }}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Progresso da meta */}
+      {goal && (
+        <div style={{ background: '#111', border: '1px solid #1A1A1A', borderRadius: '12px', padding: '20px', marginBottom: '28px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <span style={{ color: '#888', fontSize: '13px' }}>Progresso da Meta</span>
+            <span style={{ color: '#C0392B', fontWeight: '600', fontSize: '18px' }}>{pct}%</span>
+          </div>
+          <div style={{ height: '6px', background: '#1A1A1A', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #7A1010, #C0392B)', borderRadius: '3px', transition: 'width 0.5s' }} />
           </div>
         </div>
       )}
 
-      {showActionModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#19161B] border border-[#3A0A16] rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold">Nova Ação</h3>
-              <button onClick={() => { setShowActionModal(false); setActionForm({ title: '', description: '' }); }} className="p-1 hover:bg-[#3A0A16]/50 rounded">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Título</label>
-                <input type="text" value={actionForm.title} onChange={(e) => setActionForm({ ...actionForm, title: e.target.value })} className="w-full bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:ring-2 focus:ring-[#53050B]" placeholder="Ex: Criar 3 posts para Instagram" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Descrição (opcional)</label>
-                <textarea value={actionForm.description} onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })} className="w-full bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:ring-2 focus:ring-[#53050B] h-24 resize-none" placeholder="Detalhes da ação..." />
-              </div>
-              <button onClick={handleCreateAction} disabled={!actionForm.title.trim()} className="w-full bg-[#53050B] hover:bg-red-800 text-white py-3 rounded-lg disabled:opacity-50">
-                Criar Ação
-              </button>
-            </div>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', background: '#111', borderRadius: '10px', padding: '4px' }}>
+        {[['metas', 'Ações da Semana'], ['leads', 'CRM Leads'], ['config', 'Meta Mensal']].map(([id, label]) => (
+          <button key={id} onClick={() => setTab(id)}
+            style={{ flex: 1, padding: '8px', borderRadius: '7px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '500', transition: 'all 0.15s',
+              background: tab === id ? '#C0392B' : 'transparent',
+              color: tab === id ? '#fff' : '#555' }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Ações da semana */}
+      {tab === 'metas' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+            <input value={newAction} onChange={e => setNewAction(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addAction()}
+              placeholder="Adicionar ação da semana..." className="fire-input" style={{ flex: 1, padding: '10px 14px', fontSize: '13px' }} />
+            <button onClick={addAction} className="fire-btn" style={{ padding: '10px 16px', flexShrink: 0 }}>
+              <Plus size={15} />
+            </button>
           </div>
+          {actions.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#333', padding: '40px', fontSize: '13px' }}>
+              Nenhuma ação ainda. A Estrategista pode gerar as ações da semana para você!
+            </div>
+          ) : actions.map(a => (
+            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#111', border: '1px solid #1A1A1A', borderRadius: '10px', padding: '14px 16px' }}>
+              <button onClick={() => toggleAction(a.id, a.completed)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: a.completed ? '#3ECF8E' : '#333', padding: 0, display: 'flex' }}>
+                {a.completed ? <CheckCircle size={18} /> : <Circle size={18} />}
+              </button>
+              <span style={{ flex: 1, fontSize: '13px', color: a.completed ? '#444' : '#CCC', textDecoration: a.completed ? 'line-through' : 'none' }}>{a.title}</span>
+              <button onClick={() => deleteAction(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#333', padding: 0, display: 'flex' }}>
+                <Trash2 size={13} />
+              </button>
+            </div>
+          ))}
+          {actions.length > 0 && <p style={{ color: '#444', fontSize: '12px', textAlign: 'right' }}>{done}/{actions.length} concluídas</p>}
         </div>
       )}
 
-      {showLeadModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#19161B] border border-[#3A0A16] rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold">Novo Lead</h3>
-              <button onClick={() => { setShowLeadModal(false); setLeadForm({ name: '', phone: '', stage: 'novo', notes: '', followup_date: '' }); }} className="p-1 hover:bg-[#3A0A16]/50 rounded">
-                <X className="w-5 h-5" />
-              </button>
+      {/* CRM */}
+      {tab === 'leads' && (
+        <div>
+          <button onClick={() => setShowLeadForm(!showLeadForm)} className="fire-btn" style={{ marginBottom: '16px', padding: '9px 18px', fontSize: '12px' }}>
+            <Plus size={13} style={{ display: 'inline', marginRight: '6px' }} />Novo Lead
+          </button>
+          {showLeadForm && (
+            <div style={{ background: '#111', border: '1px solid #1E0505', borderRadius: '12px', padding: '20px', marginBottom: '16px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <input value={newLead.name} onChange={e => setNewLead(l => ({ ...l, name: e.target.value }))} placeholder="Nome" className="fire-input" style={{ flex: '1', minWidth: '150px', padding: '9px 12px', fontSize: '13px' }} />
+              <input value={newLead.phone} onChange={e => setNewLead(l => ({ ...l, phone: e.target.value }))} placeholder="WhatsApp" className="fire-input" style={{ flex: '1', minWidth: '150px', padding: '9px 12px', fontSize: '13px' }} />
+              <button onClick={addLead} className="fire-btn" style={{ padding: '9px 18px', fontSize: '12px' }}>Adicionar</button>
             </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Nome</label>
-                <input type="text" value={leadForm.name} onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })} className="w-full bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:ring-2 focus:ring-[#53050B]" placeholder="Nome do lead" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Telefone</label>
-                <input type="tel" value={leadForm.phone} onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })} className="w-full bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:ring-2 focus:ring-[#53050B]" placeholder="(00) 00000-0000" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Data de Follow-up</label>
-                <input type="date" value={leadForm.followup_date} onChange={(e) => setLeadForm({ ...leadForm, followup_date: e.target.value })} className="w-full bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:ring-2 focus:ring-[#53050B]" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Observações</label>
-                <textarea value={leadForm.notes} onChange={(e) => setLeadForm({ ...leadForm, notes: e.target.value })} className="w-full bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:ring-2 focus:ring-[#53050B] h-20 resize-none" placeholder="Anotações sobre o lead..." />
-              </div>
-              <button onClick={handleCreateLead} disabled={!leadForm.name.trim() || !leadForm.phone.trim()} className="w-full bg-[#53050B] hover:bg-red-800 text-white py-3 rounded-lg disabled:opacity-50">
-                Criar Lead
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showActionDetail && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowActionDetail(null)}>
-          <div className="bg-[#19161B] border border-[#3A0A16] rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-[#D4AF37]">Detalhes da Ação</h3>
-              <button onClick={() => setShowActionDetail(null)} className="p-1 hover:bg-[#3A0A16]/50 rounded">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-[#CBC8C9]/60">Título</p>
-                <p className={`text-lg ${showActionDetail.completed ? 'line-through text-[#CBC8C9]/50' : 'text-[#CBC8C9]'}`}>
-                  {showActionDetail.title}
-                </p>
-              </div>
-              {showActionDetail.description && (
-                <div>
-                  <p className="text-sm text-[#CBC8C9]/60">Descrição</p>
-                  <p className="text-[#CBC8C9] whitespace-pre-wrap">{showActionDetail.description}</p>
+          )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+            {STAGES.map(({ id, label, color, accent }) => {
+              const stageleads = leads.filter(l => l.stage === id);
+              return (
+                <div key={id} style={{ background: `${color}33`, border: `1px solid ${color}66`, borderRadius: '12px', padding: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ color: accent, fontSize: '11px', fontWeight: '600', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</span>
+                    <span style={{ background: `${color}99`, color: accent, borderRadius: '20px', padding: '2px 8px', fontSize: '11px' }}>{stageleads.length}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {stageleads.map(l => (
+                      <div key={l.id} style={{ background: '#111', border: '1px solid #1A1A1A', borderRadius: '8px', padding: '10px 12px' }}>
+                        <p style={{ fontSize: '12px', fontWeight: '500', color: '#CCC', marginBottom: '4px' }}>{l.name}</p>
+                        <p style={{ fontSize: '11px', color: '#555' }}>{l.phone}</p>
+                        <div style={{ display: 'flex', gap: '4px', marginTop: '8px', flexWrap: 'wrap' }}>
+                          {STAGES.filter(s => s.id !== id).map(s => (
+                            <button key={s.id} onClick={() => moveLead(l.id, s.id)}
+                              style={{ fontSize: '10px', padding: '3px 6px', borderRadius: '4px', border: `1px solid ${s.color}99`, background: 'transparent', color: s.accent, cursor: 'pointer' }}>
+                              → {s.label.split(' ')[0]}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              )}
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-[#CBC8C9]/60">Status:</p>
-                <span className={`px-2 py-1 rounded text-xs ${showActionDetail.completed ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400'}`}>
-                  {showActionDetail.completed ? 'Concluída' : 'Pendente'}
-                </span>
-              </div>
-              <button
-                onClick={() => { handleToggleAction(showActionDetail); setShowActionDetail(null); }}
-                className="w-full bg-[#53050B] hover:bg-red-800 text-white py-2 rounded-lg"
-              >
-                {showActionDetail.completed ? 'Marcar como Pendente' : 'Marcar como Concluída'}
-              </button>
-            </div>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {showLeadDetail && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowLeadDetail(null)}>
-          <div className="bg-[#19161B] border border-[#3A0A16] rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-[#D4AF37]">Detalhes do Lead</h3>
-              <button onClick={() => setShowLeadDetail(null)} className="p-1 hover:bg-[#3A0A16]/50 rounded">
-                <X className="w-5 h-5" />
-              </button>
+      {/* Config meta */}
+      {tab === 'config' && (
+        <div style={{ background: '#111', border: '1px solid #1A1A1A', borderRadius: '12px', padding: '24px', maxWidth: '400px' }}>
+          <h3 style={{ color: '#E0E0E0', fontSize: '15px', fontWeight: '600', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Edit2 size={15} style={{ color: '#C0392B' }} /> Meta de {month}
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', color: '#666', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>Meta do Mês (R$)</label>
+              <input type="number" className="fire-input" value={goalForm.monthly_target} onChange={e => setGoalForm(f => ({ ...f, monthly_target: e.target.value }))} placeholder={goal?.monthly_target || '10000'} />
             </div>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-[#CBC8C9]/60">Nome</p>
-                <p className="text-lg text-[#CBC8C9]">{showLeadDetail.name}</p>
-              </div>
-              <div>
-                <p className="text-sm text-[#CBC8C9]/60">Telefone</p>
-                <p className="text-[#CBC8C9]">{showLeadDetail.phone}</p>
-              </div>
-              <div>
-                <p className="text-sm text-[#CBC8C9]/60">Etapa</p>
-                <span className="px-2 py-1 rounded text-xs bg-[#3A0A16] text-[#CBC8C9]">
-                  {KANBAN_STAGES.find(s => s.id === showLeadDetail.stage)?.label}
-                </span>
-              </div>
-              {showLeadDetail.followup_date && (
-                <div>
-                  <p className="text-sm text-[#CBC8C9]/60">Follow-up</p>
-                  <p className="text-yellow-500 flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    {new Date(showLeadDetail.followup_date).toLocaleDateString('pt-BR')}
-                  </p>
-                </div>
-              )}
-              {showLeadDetail.notes && (
-                <div>
-                  <p className="text-sm text-[#CBC8C9]/60">Observações</p>
-                  <p className="text-[#CBC8C9] whitespace-pre-wrap bg-black/30 p-3 rounded">{showLeadDetail.notes}</p>
-                </div>
-              )}
-              <button
-                onClick={() => { handleDeleteLead(showLeadDetail.id); setShowLeadDetail(null); }}
-                className="w-full bg-red-900 hover:bg-red-800 text-white py-2 rounded-lg"
-              >
-                Excluir Lead
-              </button>
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', color: '#666', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>Faturamento Atual (R$)</label>
+              <input type="number" className="fire-input" value={goalForm.current_revenue} onChange={e => setGoalForm(f => ({ ...f, current_revenue: e.target.value }))} placeholder={goal?.current_revenue || '0'} />
             </div>
+            <button onClick={saveGoal} className="fire-btn" style={{ width: '100%', padding: '12px' }}>Salvar Meta</button>
           </div>
         </div>
       )}

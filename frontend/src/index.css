@@ -1,14 +1,78 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+:root {
+  --red: #C0392B;
+  --red-dark: #7A1010;
+  --red-glow: rgba(192,57,43,0.35);
+  --silver: #C8C8C8;
+  --script: #C0606A;
+  --bg: #080808;
+  --bg-card: #111111;
+  --bg-hover: #1A1A1A;
+  --border: #1E1E1E;
+  --border-red: #2A0808;
+  --text: #E0E0E0;
+  --text-muted: #666666;
 }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--red-dark); border-radius: 2px; }
+
+input:focus, textarea:focus { outline: none; }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.fire-btn {
+  background: linear-gradient(135deg, #7A1010, #C0392B);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px var(--red-glow);
+}
+.fire-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px var(--red-glow); }
+.fire-btn:disabled { opacity: 0.4; transform: none; }
+
+.fire-input {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-red);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--text);
+  font-size: 14px;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+.fire-input:focus { border-color: var(--red); }
+.fire-input::placeholder { color: var(--text-muted); }
+
+.fire-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 var(--red-glow); }
+  50% { box-shadow: 0 0 0 8px transparent; }
+}
+.animate-fade-up { animation: fadeUp 0.3s ease-out; }

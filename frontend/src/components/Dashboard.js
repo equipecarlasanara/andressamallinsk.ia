@@ -1,55 +1,36 @@
 import { useState } from 'react';
 import Sidebar from './Sidebar';
+import EstrategistaDigital from './EstrategistaDigital';
 import GoalsDashboard from './GoalsDashboard';
 import ContentLibrary from './ContentLibrary';
-import EstrategistaDigital from './EstrategistaDigital';
 import ProfileAnalysis from './ProfileAnalysis';
 import PhotoshootCreator from './PhotoshootCreator';
 import ObjectionExterminator from './ObjectionExterminator';
-import ImageEditor from './ImageEditor';
 import SalesFunnel from './SalesFunnel';
-
+import ImageEditor from './ImageEditor';
 import PromptLibrary from './PromptLibrary';
 
+const views = {
+  estrategista: EstrategistaDigital,
+  dashboard: GoalsDashboard,
+  prompts: PromptLibrary,
+  analise: ProfileAnalysis,
+  ensaio: PhotoshootCreator,
+  biblioteca: ContentLibrary,
+  objecao: ObjectionExterminator,
+  funil: SalesFunnel,
+  editor: ImageEditor,
+};
+
 export default function Dashboard({ user, onLogout }) {
-  const [activeView, setActiveView] = useState('dashboard');
+  const [active, setActive] = useState('estrategista');
+  const View = views[active] || GoalsDashboard;
 
   return (
-    <div className="flex h-screen text-[#E8E8E8]" data-testid="dashboard">
-      <Sidebar
-        activeView={activeView}
-        setActiveView={setActiveView}
-        user={user}
-        onLogout={onLogout}
-      />
-      <main className="flex-1 overflow-hidden">
-        <div className={`h-full w-full ${activeView === 'estrategista' ? 'block' : 'hidden'}`}>
-          <EstrategistaDigital />
-        </div>
-        <div className={`h-full w-full ${activeView === 'dashboard' ? 'block' : 'hidden'}`}>
-          <GoalsDashboard />
-        </div>
-        <div className={`h-full w-full ${activeView === 'prompts' ? 'block' : 'hidden'}`}>
-          <PromptLibrary />
-        </div>
-        <div className={`h-full w-full ${activeView === 'analise' ? 'block' : 'hidden'}`}>
-          <ProfileAnalysis />
-        </div>
-        <div className={`h-full w-full ${activeView === 'ensaio' ? 'block' : 'hidden'}`}>
-          <PhotoshootCreator />
-        </div>
-        <div className={`h-full w-full ${activeView === 'biblioteca' ? 'block' : 'hidden'}`}>
-          <ContentLibrary />
-        </div>
-        <div className={`h-full w-full ${activeView === 'objecao' ? 'block' : 'hidden'}`}>
-          <ObjectionExterminator />
-        </div>
-        <div className={`h-full w-full ${activeView === 'funil' ? 'block' : 'hidden'}`}>
-          <SalesFunnel />
-        </div>
-        <div className={`h-full w-full ${activeView === 'editor' ? 'block' : 'hidden'}`}>
-          <ImageEditor />
-        </div>
+    <div style={{ display: 'flex', height: '100vh', background: '#080808', overflow: 'hidden' }}>
+      <Sidebar active={active} setActive={setActive} user={user} onLogout={onLogout} />
+      <main style={{ flex: 1, overflow: 'hidden' }}>
+        <View />
       </main>
     </div>
   );

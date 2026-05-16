@@ -1,72 +1,60 @@
-import { Target, BookOpen, Brain, LogOut, User, Camera, Shield, Edit3, TrendingUp, FileText } from 'lucide-react';
+import { Brain, Target, FileText, User, Camera, BookOpen, Shield, TrendingUp, Edit3, LogOut } from 'lucide-react';
 
-export default function Sidebar({ activeView, setActiveView, user, onLogout }) {
-  const navItems = [
-    { id: 'estrategista', label: 'Estrategista Digital', icon: Brain },
-    { id: 'dashboard', label: 'Dashboard de Metas', icon: Target },
-    { id: 'prompts', label: 'Biblioteca de Prompts', icon: FileText },
-    { id: 'analise', label: 'Análise de Perfil', icon: User },
-    { id: 'ensaio', label: 'Criar Ensaio Fotográfico', icon: Camera },
-    { id: 'biblioteca', label: 'Biblioteca de Conteúdo', icon: BookOpen },
-    { id: 'objecao', label: 'Exterminador de Objeção', icon: Shield },
-    { id: 'funil', label: 'Funil de Vendas', icon: TrendingUp },
-    { id: 'editor', label: 'Editor de Fotos', icon: Edit3 },
-  ];
+const nav = [
+  { id: 'estrategista', label: 'Estrategista Digital', icon: Brain },
+  { id: 'dashboard', label: 'Dashboard de Metas', icon: Target },
+  { id: 'prompts', label: 'Biblioteca de Prompts', icon: FileText },
+  { id: 'analise', label: 'Análise de Perfil', icon: User },
+  { id: 'ensaio', label: 'Criar Ensaio', icon: Camera },
+  { id: 'biblioteca', label: 'Biblioteca de Conteúdo', icon: BookOpen },
+  { id: 'objecao', label: 'Exterminador de Objeção', icon: Shield },
+  { id: 'funil', label: 'Funil de Vendas', icon: TrendingUp },
+  { id: 'editor', label: 'Editor de Fotos', icon: Edit3 },
+];
 
+export default function Sidebar({ active, setActive, user, onLogout }) {
   return (
-    <aside className="w-64 flex flex-col p-4 border-r border-[#1E0505]" style={{ background: '#0D0D0D' }} data-testid="sidebar">
+    <aside style={{ width: '220px', background: '#0C0C0C', borderRight: '1px solid #1A0505', display: 'flex', flexDirection: 'column', padding: '20px 12px', flexShrink: 0 }}>
 
       {/* Logo */}
-      <div className="text-center py-6 flex flex-col items-center border-b border-[#1E0505] mb-4">
-        <img
-          src="/logo-fire-branco.png"
-          alt="Estrategista Fire"
-          className="w-40 mb-3"
-          style={{ filter: 'drop-shadow(0 0 15px rgba(192,57,43,0.35))' }}
-          data-testid="profile-image"
-        />
-        {user && (
-          <p className="text-xs text-[#666] mt-1 tracking-wide" data-testid="user-name">
-            {user.name}
-          </p>
-        )}
+      <div style={{ textAlign: 'center', paddingBottom: '20px', borderBottom: '1px solid #1A0505', marginBottom: '16px' }}>
+        <img src="/logo-fire-branco.png" alt="Estrategista Fire"
+          style={{ width: '130px', filter: 'drop-shadow(0 0 12px rgba(192,57,43,0.4))' }} />
+        {user && <p style={{ color: '#444', fontSize: '11px', marginTop: '8px', letterSpacing: '0.05em' }}>{user.name}</p>}
       </div>
 
       {/* Nav */}
-      <nav className="flex flex-col space-y-1 flex-1">
-        {navItems.map((item) => {
-          const isActive = activeView === item.id;
-          const Icon = item.icon;
+      <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        {nav.map(({ id, label, icon: Icon }) => {
+          const isActive = active === id;
           return (
-            <button
-              key={item.id}
-              onClick={() => setActiveView(item.id)}
-              className="flex items-center p-3 rounded-lg transition-all duration-200 text-left group"
+            <button key={id} onClick={() => setActive(id)}
               style={{
-                background: isActive ? 'linear-gradient(135deg, #3A0A0A, #C0392B22)' : 'transparent',
+                display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px',
+                borderRadius: '8px', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+                background: isActive ? 'linear-gradient(135deg, #2A0808, rgba(192,57,43,0.15))' : 'transparent',
                 borderLeft: isActive ? '2px solid #C0392B' : '2px solid transparent',
-                color: isActive ? '#E8E8E8' : '#666',
+                color: isActive ? '#E0E0E0' : '#555',
+                fontSize: '12px', fontWeight: isActive ? '500' : '400', letterSpacing: '0.02em',
+                transition: 'all 0.15s',
               }}
-              data-testid={`nav-${item.id}`}
+              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.color = '#999'; e.currentTarget.style.background = '#141414'; }}}
+              onMouseLeave={e => { if (!isActive) { e.currentTarget.style.color = '#555'; e.currentTarget.style.background = 'transparent'; }}}
             >
-              <Icon className="w-4 h-4 mr-3 flex-shrink-0" style={{ color: isActive ? '#C0392B' : '#555' }} />
-              <span className="font-medium text-xs tracking-wide">{item.label}</span>
+              <Icon size={14} style={{ color: isActive ? '#C0392B' : '#444', flexShrink: 0 }} />
+              {label}
             </button>
           );
         })}
       </nav>
 
       {/* Logout */}
-      <button
-        onClick={onLogout}
-        className="flex items-center p-3 rounded-lg transition-all duration-200 mt-4 border border-[#1E0505] hover:border-[#C0392B]/30"
-        style={{ color: '#555', background: 'transparent' }}
-        onMouseEnter={e => { e.currentTarget.style.color = '#E8E8E8'; e.currentTarget.style.background = '#1A0505'; }}
-        onMouseLeave={e => { e.currentTarget.style.color = '#555'; e.currentTarget.style.background = 'transparent'; }}
-        data-testid="logout-button"
+      <button onClick={onLogout}
+        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '8px', border: '1px solid #1A0505', background: 'transparent', color: '#444', fontSize: '12px', cursor: 'pointer', marginTop: '8px', transition: 'all 0.15s' }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#E0E0E0'; e.currentTarget.style.background = '#1A0505'; }}
+        onMouseLeave={e => { e.currentTarget.style.color = '#444'; e.currentTarget.style.background = 'transparent'; }}
       >
-        <LogOut className="w-4 h-4 mr-3" />
-        <span className="font-medium text-xs tracking-wide">Sair</span>
+        <LogOut size={14} /> Sair
       </button>
     </aside>
   );

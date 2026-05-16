@@ -1,220 +1,170 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Send, Trash2, Upload, FileText, X, CheckCircle } from 'lucide-react';
+import { Send, Upload, FileText, X, Trash2, CheckCircle } from 'lucide-react';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-const getAuthHeaders = () => ({
-  headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-});
-
-const initialMessage = {
-  role: 'assistant',
-  content: 'Olá leoa! 👋\n\nPara eu te ajudar de forma personalizada, faça o upload do seu Plano de Ação Individual (PDF) clicando no botão "Plano de Ação" acima.\n\nSe já enviou antes, pode ir direto ao ponto — estou aqui!'
-};
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const auth = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
 
 export default function EstrategistaDigital() {
-  const [messages, setMessages] = useState([initialMessage]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [sessionId] = useState(`session_${Date.now()}`);
-  const [actionPlan, setActionPlan] = useState(null);
-  const [uploadLoading, setUploadLoading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-  const messagesEndRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const [msgs, setMsgs] = useState([{
+    role: 'ai',
+    text: 'Olá leoa! 🔥\n\nPara eu te ajudar de forma personalizada, faça o upload do seu Plano de Ação Individual (PDF) clicando em "Plano de Ação" acima.\n\nSe já enviou antes, pode ir direto — estou aqui!'
+  }]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sessionId] = useState(`s_${Date.now()}`);
+  const [plan, setPlan] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadDone, setUploadDone] = useState(false);
+  const bottomRef = useRef(null);
+  const fileRef = useRef(null);
 
-  const loadActionPlan = useCallback(async () => {
+  const loadPlan = useCallback(async () => {
     try {
-      const res = await axios.get(`${API}/action-plan`, getAuthHeaders());
-      if (res.data) setActionPlan(res.data);
-    } catch (e) {}
+      const { data } = await axios.get(`${API}/action-plan`, auth());
+      if (data) setPlan(data);
+    } catch {}
   }, []);
 
-  useEffect(() => { loadActionPlan(); }, [loadActionPlan]);
+  useEffect(() => { loadPlan(); }, [loadPlan]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const handlePlanUpload = async (e) => {
+  const uploadPlan = async (e) => {
     const file = e.target.files?.[0];
-    if (!file || file.type !== 'application/pdf') {
-      alert('Por favor, selecione um arquivo PDF.');
-      return;
-    }
-    setUploadLoading(true);
-    setUploadSuccess(false);
+    if (!file || file.type !== 'application/pdf') { alert('Selecione um arquivo PDF.'); return; }
+    setUploading(true);
     try {
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
+      const b64 = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result.split(',')[1]);
+        r.onerror = rej;
+        r.readAsDataURL(file);
       });
-      const res = await axios.post(
-        `${API}/action-plan`,
-        { filename: file.name, content: base64, is_pdf: true },
-        getAuthHeaders()
-      );
-      setActionPlan({ filename: file.name, uploaded_at: res.data.uploaded_at });
-      setUploadSuccess(true);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: `Recebi seu Plano de Ação Individual — ${file.name}!\n\nJá li todo o seu material. Agora consigo te ajudar de forma totalmente personalizada.\n\nA partir desse plano, gostaria de receber as ações desta semana?`
-      }]);
-      setTimeout(() => setUploadSuccess(false), 3000);
-    } catch (err) {
-      alert('Erro ao enviar o plano. Tente novamente.');
-    } finally {
-      setUploadLoading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+      const { data } = await axios.post(`${API}/action-plan`, { filename: file.name, content: b64, is_pdf: true }, auth());
+      setPlan({ filename: file.name, uploaded_at: data.uploaded_at });
+      setUploadDone(true);
+      setTimeout(() => setUploadDone(false), 3000);
+      setMsgs(m => [...m, { role: 'ai', text: `Recebi seu Plano de Ação — ${file.name}! 📋\n\nJá li todo o material. Agora posso te ajudar de forma totalmente personalizada.\n\nA partir desse plano, gostaria de receber as ações desta semana?` }]);
+    } catch { alert('Erro ao enviar. Tente novamente.'); }
+    finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   };
 
-  const handleRemovePlan = async () => {
-    if (!window.confirm('Deseja remover o Plano de Ação atual?')) return;
-    try {
-      await axios.delete(`${API}/action-plan`, getAuthHeaders());
-      setActionPlan(null);
-    } catch (e) { alert('Erro ao remover plano.'); }
+  const removePlan = async () => {
+    if (!window.confirm('Remover o Plano de Ação atual?')) return;
+    try { await axios.delete(`${API}/action-plan`, auth()); setPlan(null); } catch { alert('Erro ao remover.'); }
   };
 
-  const handleSendMessage = async (textOverride = null) => {
-    const textToSend = textOverride || inputMessage.trim();
-    if (!textToSend || isLoading) return;
-    setInputMessage('');
-    setMessages(prev => [...prev, { role: 'user', content: textToSend }]);
-    setIsLoading(true);
+  const send = async (override) => {
+    const text = override || input.trim();
+    if (!text || loading) return;
+    setInput('');
+    setMsgs(m => [...m, { role: 'user', text }]);
+    setLoading(true);
     try {
-      const response = await axios.post(
-        `${API}/ai/chat`,
-        { message: textToSend, session_id: sessionId },
-        getAuthHeaders()
-      );
-      const aiResponse = response.data.response;
-      const cleanResponse = aiResponse.replace(/PROJETAR_TAREFA:.*$/gm, '').trim();
-      setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
-      if (aiResponse.includes('PROJETAR_TAREFA:')) {
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: 'Suas acoes da semana foram adicionadas ao Dashboard de Metas! Acesse la para acompanhar seu progresso.'
-          }]);
-        }, 1000);
+      const { data } = await axios.post(`${API}/ai/chat`, { message: text, session_id: sessionId }, auth());
+      const clean = data.response.replace(/PROJETAR_TAREFA:.*$/gm, '').trim();
+      setMsgs(m => [...m, { role: 'ai', text: clean }]);
+      if (data.response.includes('PROJETAR_TAREFA:')) {
+        setTimeout(() => setMsgs(m => [...m, { role: 'ai', text: '✅ Suas ações da semana foram adicionadas ao Dashboard de Metas!' }]), 800);
       }
-    } catch (err) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Ops, tive um problema técnico. Pode repetir a última mensagem, Leoa?'
-      }]);
-    } finally {
-      setIsLoading(false);
-    }
+    } catch {
+      setMsgs(m => [...m, { role: 'ai', text: 'Tive um problema técnico. Pode repetir, Leoa?' }]);
+    } finally { setLoading(false); }
   };
 
-  const handleClearHistory = () => {
-    if (window.confirm('Deseja iniciar um novo ciclo estratégico? Isso apagará a conversa atual.')) {
-      setMessages([initialMessage]);
-    }
-  };
-
-  const lastMessage = messages[messages.length - 1];
-  const showWeeklyActionsOffer = !isLoading &&
-    lastMessage?.role === 'assistant' &&
-    lastMessage.content.includes('ações desta semana');
+  const lastMsg = msgs[msgs.length - 1];
+  const showWeekOffer = !loading && lastMsg?.role === 'ai' && lastMsg.text.includes('ações desta semana');
 
   return (
-    <div className="h-full flex flex-col bg-[#19161B]" data-testid="estrategista-digital">
-      <div className="border-b border-[#3A0A16] p-4 flex justify-between items-center bg-black/20">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#D4AF37] rounded-full flex items-center justify-center shadow-lg overflow-hidden">
-            <img src="/logo_full.png" alt="" className="w-10 h-20 object-cover object-top" style={{ transform: 'translateY(4px)' }} />
-          </div>
-          <p className="text-xs text-[#CBC8C9]/50">by Andressa Mallinsk</p>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#080808' }}>
+
+      {/* Header */}
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid #1A0505', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0C0C0C' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <img src="/logo-fire-branco.png" alt="" style={{ width: '80px', filter: 'drop-shadow(0 0 8px rgba(192,57,43,0.4))' }} />
         </div>
-        <div className="flex items-center gap-2">
-          {actionPlan ? (
-            <div className="flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-lg px-3 py-1.5">
-              <FileText className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span className="text-[#D4AF37] text-xs font-medium truncate max-w-[120px]">{actionPlan.filename}</span>
-              <button onClick={handleRemovePlan} className="text-[#D4AF37]/50 hover:text-red-400 transition-colors">
-                <X className="w-3 h-3" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {plan ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(192,57,43,0.1)', border: '1px solid rgba(192,57,43,0.3)', borderRadius: '8px', padding: '6px 12px' }}>
+              <FileText size={13} style={{ color: '#C0392B' }} />
+              <span style={{ color: '#C0606A', fontSize: '12px', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{plan.filename}</span>
+              <button onClick={removePlan} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666', padding: 0, display: 'flex' }}>
+                <X size={12} />
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadLoading}
-              className="flex items-center gap-2 bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
-            >
-              {uploadLoading ? (
-                <div className="w-3.5 h-3.5 border border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
-              ) : uploadSuccess ? <CheckCircle className="w-3.5 h-3.5" /> : <Upload className="w-3.5 h-3.5" />}
-              {uploadLoading ? 'Enviando...' : uploadSuccess ? 'Enviado!' : 'Plano de Ação'}
+            <button onClick={() => fileRef.current?.click()} disabled={uploading}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(192,57,43,0.1)', border: '1px solid rgba(192,57,43,0.3)', borderRadius: '8px', padding: '7px 14px', color: '#C0392B', fontSize: '12px', fontWeight: '500', cursor: 'pointer' }}>
+              {uploading ? <div style={{ width: 13, height: 13, border: '1px solid #C0392B', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> : uploadDone ? <CheckCircle size={13} /> : <Upload size={13} />}
+              {uploading ? 'Enviando...' : uploadDone ? 'Enviado!' : 'Plano de Ação'}
             </button>
           )}
-          <input ref={fileInputRef} type="file" accept=".pdf" onChange={handlePlanUpload} className="hidden" />
-          <button onClick={handleClearHistory} className="text-[#CBC8C9]/30 hover:text-red-400 p-2 border border-white/5 rounded-full transition-all" title="Reiniciar Ciclo">
-            <Trash2 className="w-4 h-4" />
+          <input ref={fileRef} type="file" accept=".pdf" onChange={uploadPlan} style={{ display: 'none' }} />
+          <button onClick={() => { if (window.confirm('Reiniciar conversa?')) setMsgs([{ role: 'ai', text: 'Nova conversa iniciada! Como posso te ajudar, Leoa? 🔥' }]); }}
+            style={{ background: 'none', border: '1px solid #1A0505', borderRadius: '8px', padding: '7px', color: '#444', cursor: 'pointer', display: 'flex' }}>
+            <Trash2 size={13} />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6" data-testid="chat-messages">
-        {messages.map((message, index) => (
-          <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] rounded-2xl p-5 shadow-xl ${message.role === 'user' ? 'bg-[#53050B] text-white rounded-tr-none' : 'bg-[#2A262D] border border-[#3A0A16] text-[#CBC8C9] rounded-tl-none font-light'}`}>
-              <p className="whitespace-pre-wrap leading-relaxed text-[15px]">{message.content}</p>
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {msgs.map((m, i) => (
+          <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+            <div style={{
+              maxWidth: '80%', borderRadius: m.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+              padding: '14px 18px', fontSize: '14px', lineHeight: '1.6', whiteSpace: 'pre-wrap',
+              background: m.role === 'user' ? 'linear-gradient(135deg, #5A0808, #C0392B)' : '#141414',
+              border: m.role === 'user' ? 'none' : '1px solid #1E0505',
+              color: m.role === 'user' ? '#fff' : '#D0D0D0',
+              boxShadow: m.role === 'user' ? '0 4px 15px rgba(192,57,43,0.3)' : 'none',
+            }}>
+              {m.text}
             </div>
           </div>
         ))}
 
-        {showWeeklyActionsOffer && (
-          <div className="flex flex-col gap-3 mt-2">
-            <button onClick={() => handleSendMessage("Sim! Quero receber as ações desta semana baseadas no meu plano de ação.")}
-              className="bg-[#D4AF37] hover:bg-[#B8962E] text-black font-bold py-3 px-6 rounded-xl transition-all text-left flex justify-between items-center">
-              Sim! Quero as ações da semana <span className="text-xs opacity-50">→</span>
+        {showWeekOffer && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+            <button onClick={() => send('Sim! Quero as ações desta semana baseadas no meu plano.')} className="fire-btn" style={{ textAlign: 'left', padding: '12px 20px' }}>
+              ✅ Sim! Quero as ações desta semana
             </button>
-            <button onClick={() => handleSendMessage("Prefiro conversar sobre uma dúvida estratégica primeiro.")}
-              className="bg-transparent border border-[#3A0A16] hover:bg-[#3A0A16] text-[#CBC8C9] font-medium py-3 px-6 rounded-xl transition-all text-left flex justify-between items-center">
-              Prefiro tirar uma dúvida primeiro <span className="text-xs opacity-50">→</span>
+            <button onClick={() => send('Prefiro tirar uma dúvida estratégica primeiro.')}
+              style={{ background: 'transparent', border: '1px solid #2A0808', borderRadius: '10px', padding: '12px 20px', color: '#888', fontSize: '13px', cursor: 'pointer', textAlign: 'left' }}>
+              💬 Prefiro tirar uma dúvida primeiro
             </button>
           </div>
         )}
 
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-[#2A262D] border border-[#3A0A16] rounded-2xl rounded-tl-none p-5">
-              <div className="flex gap-1.5">
-                {[0, 150, 300].map(delay => (
-                  <div key={delay} className="w-2 h-2 bg-[#D4AF37] rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
-                ))}
-              </div>
+        {loading && (
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div style={{ background: '#141414', border: '1px solid #1E0505', borderRadius: '16px 16px 16px 4px', padding: '14px 18px', display: 'flex', gap: '5px', alignItems: 'center' }}>
+              {[0,1,2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#C0392B', animation: `bounce 1s ${i*0.15}s infinite` }} />)}
             </div>
           </div>
         )}
-        <div ref={messagesEndRef} />
+        <div ref={bottomRef} />
       </div>
 
-      <div className="border-t border-[#3A0A16] p-4 bg-black/20">
-        <div className="flex gap-3 items-end">
-          <textarea
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
-            placeholder={actionPlan ? "Fale com a Estrategista..." : "Envie seu Plano de Ação ou escreva sua dúvida..."}
-            rows={1}
-            className="flex-1 bg-[#2A262D] border border-[#3A0A16] rounded-xl px-4 py-3 text-[#CBC8C9] placeholder-[#CBC8C9]/30 resize-none focus:outline-none focus:border-[#D4AF37]/50 transition-colors text-sm"
-            style={{ minHeight: '48px', maxHeight: '120px' }}
-          />
-          <button onClick={() => handleSendMessage()} disabled={!inputMessage.trim() || isLoading}
-            className="bg-[#D4AF37] hover:bg-[#B8962E] disabled:opacity-30 disabled:cursor-not-allowed text-black p-3 rounded-xl transition-all flex-shrink-0">
-            <Send className="w-5 h-5" />
+      {/* Input */}
+      <div style={{ padding: '16px 20px', borderTop: '1px solid #1A0505', background: '#0C0C0C' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+          <textarea value={input} onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+            placeholder={plan ? 'Fale com a Estrategista Fire...' : 'Envie seu Plano de Ação ou escreva sua dúvida...'}
+            rows={1} className="fire-input"
+            style={{ flex: 1, resize: 'none', minHeight: '46px', maxHeight: '120px', fontFamily: 'inherit' }} />
+          <button onClick={() => send()} disabled={!input.trim() || loading} className="fire-btn"
+            style={{ padding: '12px 16px', flexShrink: 0 }}>
+            <Send size={16} />
           </button>
         </div>
       </div>
+
+      <style>{`
+        @keyframes bounce { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-4px) } }
+        @keyframes spin { to { transform: rotate(360deg) } }
+      `}</style>
     </div>
   );
 }
