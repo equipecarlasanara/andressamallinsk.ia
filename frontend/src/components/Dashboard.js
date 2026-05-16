@@ -15,7 +15,7 @@ export default function Dashboard({ user, onLogout }) {
   const [activeView, setActiveView] = useState('dashboard');
 
   return (
-    <div className="flex h-screen bg-[#19161B] text-[#CBC8C9]" data-testid="dashboard">
+    <div className="flex h-screen text-[#E8E8E8]" data-testid="dashboard">
       <Sidebar
         activeView={activeView}
         setActiveView={setActiveView}
