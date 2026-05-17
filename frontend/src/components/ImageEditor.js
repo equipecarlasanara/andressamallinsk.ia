@@ -1,173 +1,97 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
-import { Download } from 'lucide-react';
+import { Upload, Download, Edit3 } from 'lucide-react';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-const getAuthHeaders = () => ({
-  headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-});
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const auth = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
 
 export default function ImageEditor() {
+  const [image, setImage] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [prompt, setPrompt] = useState('');
-  const [originalImage, setOriginalImage] = useState(null);
-  const [editedImageUrl, setEditedImageUrl] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const fileInputRef = useRef(null);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
 
-  const handleFileChange = (event) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setOriginalImage({ file, preview: URL.createObjectURL(file) });
-      setEditedImageUrl(null);
-      setError(null);
-      setPrompt('');
-    }
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { setImage({ base64: reader.result.split(',')[1] }); setPreview(reader.result); setResult(null); };
+    reader.readAsDataURL(file);
   };
 
-  const handleEdit = async () => {
-    if (!prompt.trim() || !originalImage) return;
-    setIsLoading(true);
-    setEditedImageUrl(null);
-    setError(null);
-
+  const edit = async () => {
+    if (!image || !prompt.trim()) { alert('Envie uma imagem e descreva a edição.'); return; }
+    setLoading(true); setResult(null);
     try {
-      const reader = new FileReader();
-      const imagePayload = await new Promise((resolve) => {
-        reader.onloadend = () => {
-          const base64 = reader.result.split(',')[1];
-          resolve({ base64, mimeType: originalImage.file.type });
-        };
-        reader.readAsDataURL(originalImage.file);
-      });
-
-      const response = await axios.post(
-        `${API}/ai/edit-image`,
-        { prompt, image: imagePayload },
-        getAuthHeaders()
-      );
-      setEditedImageUrl(response.data.imageUrl);
-    } catch (err) {
-      console.error('Erro ao editar imagem:', err);
-      setError('Não foi possível editar a imagem. Tente novamente.');
-    } finally {
-      setIsLoading(false);
-    }
+      const { data } = await axios.post(`${API}/ai/edit-image`, { image, prompt }, auth());
+      setResult(data.imageUrl);
+    } catch { alert('Erro ao editar. Tente novamente.'); }
+    finally { setLoading(false); }
   };
 
-  const handleDownload = (url, filename) => {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const download = () => {
+    const a = document.createElement('a'); a.href = result; a.download = 'imagem-editada.jpg'; a.click();
   };
 
   return (
-    <div className="p-6 h-full flex flex-col bg-[#19161B]" data-testid="image-editor">
-      <h1 className="text-3xl font-title text-[#CBC8C9] mb-4 border-b border-[#3A0A16] pb-2">
-        Editor Nano Banana
-      </h1>
-      <p className="text-[#CBC8C9]/80 mb-4">
-        Envie uma imagem e use comandos de texto para editá-la. Ex: "Adicione um filtro retrô" ou "Remova a pessoa no fundo".
-      </p>
+    <div style={{ height: '100%', overflowY: 'auto', padding: '28px', background: '#080808' }}>
+      <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#E0E0E0', marginBottom: '6px' }}>Editor de Fotos</h1>
+      <p style={{ color: '#555', fontSize: '13px', marginBottom: '28px' }}>Envie uma imagem e use comandos de texto para editá-la com IA.</p>
 
-      {!originalImage && !isLoading && (
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          className="flex flex-col flex-grow items-center justify-center bg-black/30 border-2 border-dashed border-[#3A0A16] rounded-lg p-4 cursor-pointer hover:border-[#53050B]"
-        >
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          <div className="text-center">
-            <p className="mb-4 text-[#CBC8C9]/70">Clique para enviar uma imagem para editar.</p>
-            <button className="px-6 py-2 bg-[#53050B] text-white rounded-lg font-semibold hover:bg-red-800 pointer-events-none">
-              Enviar Imagem
-            </button>
-          </div>
-        </div>
-      )}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', maxWidth: '900px' }}>
+        {/* Original */}
+        <div style={{ background: '#111', border: '1px solid #1E0505', borderRadius: '12px', padding: '24px' }}>
+          <h3 style={{ color: '#E0E0E0', fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}>Imagem Original</h3>
+          <label style={{ display: 'block', border: '2px dashed #2A0808', borderRadius: '10px', padding: preview ? '0' : '40px', textAlign: 'center', cursor: 'pointer', overflow: 'hidden' }}>
+            {preview ? (
+              <img src={preview} alt="Original" style={{ width: '100%', borderRadius: '8px', display: 'block' }} />
+            ) : (
+              <><Upload size={28} style={{ color: '#C0392B', margin: '0 auto 8px' }} /><p style={{ color: '#666', fontSize: '13px' }}>Clique para enviar</p></>
+            )}
+            <input type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
+          </label>
 
-      {isLoading && (
-        <div className="flex flex-col flex-grow items-center justify-center">
-          <div className="w-32 h-32 border-8 border-gray-200 border-t-[#53050B] rounded-full animate-spin"></div>
-          <p className="mt-4 text-lg">Editando imagem com Nano Banana...</p>
-        </div>
-      )}
-
-      {originalImage && !isLoading && (
-        <div className="flex-grow flex flex-col overflow-hidden">
-          <div className="bg-black border-2 border-[#53050B] rounded-lg p-4 mb-4 flex items-center gap-4">
-            <input
-              type="text"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="cacheie meu cabelo e me coloque sentada"
-              className="flex-1 bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:outline-none focus:ring-2 focus:ring-[#53050B]"
-              disabled={isLoading}
-            />
-            <button
-              onClick={handleEdit}
-              disabled={isLoading || !prompt.trim()}
-              className="px-8 py-3 bg-[#53050B] text-white rounded-lg font-semibold hover:bg-red-800 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
-            >
-              Editar
-            </button>
+          <div style={{ marginTop: '16px' }}>
+            <label style={{ display: 'block', fontSize: '11px', color: '#666', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
+              Comando de Edição
+            </label>
+            <textarea value={prompt} onChange={e => setPrompt(e.target.value)}
+              placeholder='Ex: "Adicione um filtro retrô", "Remova o fundo", "Mude o cenário para escritório"...'
+              rows={3} className="fire-input" style={{ resize: 'none', fontFamily: 'inherit', fontSize: '13px' }} />
           </div>
 
-          {error && <p className="text-red-400 text-center mb-4">{error}</p>}
-
-          <div className="flex-grow grid grid-cols-2 gap-6 overflow-hidden">
-            <div className="flex flex-col items-center justify-center">
-              <h2 className="text-2xl font-title text-center mb-4">Original</h2>
-              <img
-                src={originalImage.preview}
-                alt="Original"
-                className="w-full h-auto max-h-[500px] object-contain rounded-lg"
-              />
-            </div>
-            <div className="flex flex-col items-center justify-center">
-              <h2 className="text-2xl font-title text-center mb-4">Editada</h2>
-              <div className="relative w-full h-auto max-h-[500px] flex items-center justify-center">
-                {editedImageUrl ? (
-                  <>
-                    <img
-                      src={editedImageUrl}
-                      alt="Editada"
-                      className="w-full h-auto max-h-[500px] object-contain rounded-lg"
-                    />
-                    <button
-                      onClick={() => handleDownload(editedImageUrl, 'imagem-editada.png')}
-                      className="absolute top-2 right-2 bg-black/60 text-white p-2 rounded-full hover:bg-[#53050B] transition-opacity"
-                      aria-label="Baixar Imagem"
-                    >
-                      <Download className="w-5 h-5" />
-                    </button>
-                  </>
-                ) : (
-                  <div className="w-full h-[500px] bg-black/20 border-2 border-[#53050B] rounded-lg flex items-center justify-center">
-                    <p className="text-[#CBC8C9]/60 p-4 text-center">Sua imagem editada aparecerá aqui.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={() => setOriginalImage(null)}
-            className="mt-6 mx-auto px-6 py-3 bg-[#19161B] border-2 border-[#53050B] text-white rounded-lg font-semibold hover:bg-[#3A0A16]"
-          >
-            Enviar Outra Imagem
+          <button onClick={edit} disabled={loading || !image || !prompt.trim()} className="fire-btn"
+            style={{ width: '100%', marginTop: '16px', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <Edit3 size={14} />
+            {loading ? 'Editando...' : 'Aplicar Edição'}
           </button>
         </div>
-      )}
+
+        {/* Resultado */}
+        <div style={{ background: '#111', border: '1px solid #1E0505', borderRadius: '12px', padding: '24px' }}>
+          <h3 style={{ color: '#E0E0E0', fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}>Imagem Editada</h3>
+          {loading && (
+            <div style={{ aspectRatio: '1', background: '#0A0A0A', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pulse 1.5s infinite' }}>
+              <p style={{ color: '#444', fontSize: '13px' }}>Processando...</p>
+            </div>
+          )}
+          {result && !loading && (
+            <>
+              <img src={result} alt="Editada" style={{ width: '100%', borderRadius: '8px', border: '1px solid #2A0808' }} />
+              <button onClick={download} className="fire-btn" style={{ width: '100%', marginTop: '12px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px' }}>
+                <Download size={14} /> Baixar
+              </button>
+            </>
+          )}
+          {!result && !loading && (
+            <div style={{ aspectRatio: '1', background: '#0A0A0A', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <p style={{ color: '#333', fontSize: '13px' }}>Resultado aparecerá aqui</p>
+            </div>
+          )}
+        </div>
+      </div>
+      <style>{`@keyframes pulse { 0%,100%{opacity:0.5} 50%{opacity:0.8} }`}</style>
     </div>
   );
 }

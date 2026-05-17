@@ -1,13 +1,11 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import axios from 'axios';
-import { Sparkles, Save } from 'lucide-react';
+import { BookOpen, Sparkles } from 'lucide-react';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-const getAuthHeaders = () => ({
-  headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-});
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const auth = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+const TABS = ['reels', 'carrossel', 'postEstatico', 'stories', 'ads'];
+const TAB_LABELS = { reels: 'Reels', carrossel: 'Carrossel', postEstatico: 'Post Estático', stories: 'Stories', ads: 'Criativos (ADS)' };
 
 export default function ContentLibrary() {
   const [niche, setNiche] = useState('');
@@ -15,222 +13,109 @@ export default function ContentLibrary() {
   const [activeTab, setActiveTab] = useState('reels');
   const [selectedTheme, setSelectedTheme] = useState(null);
   const [content, setContent] = useState('');
-  const [isLoadingThemes, setIsLoadingThemes] = useState(false);
-  const [isLoadingContent, setIsLoadingContent] = useState(false);
-  const [error, setError] = useState('');
+  const [loadingThemes, setLoadingThemes] = useState(false);
+  const [loadingContent, setLoadingContent] = useState(false);
 
-  const tabs = [
-    { key: 'reels', label: 'Reels' },
-    { key: 'carrossel', label: 'Carrossel' },
-    { key: 'postEstatico', label: 'Post Estático' },
-    { key: 'stories', label: 'Stories' },
-    { key: 'ads', label: 'Criativos (ADS)' }
-  ];
-
-  const handleGenerateThemes = async () => {
-    if (!niche.trim()) return;
-    setIsLoadingThemes(true);
-    setThemes(null);
-    setSelectedTheme(null);
-    setContent('');
-    setError('');
-
+  const generateThemes = async () => {
+    if (!niche.trim()) { alert('Digite seu nicho primeiro.'); return; }
+    setLoadingThemes(true); setThemes(null); setSelectedTheme(null); setContent('');
     try {
-      const response = await axios.post(
-        `${API}/ai/generate-themes`,
-        { niche },
-        getAuthHeaders()
-      );
-      setThemes(response.data);
-    } catch (err) {
-      setError('Não foi possível gerar os temas. Tente novamente.');
-      console.error('Erro ao gerar temas:', err);
-    } finally {
-      setIsLoadingThemes(false);
-    }
+      const { data } = await axios.post(`${API}/ai/generate-themes`, { niche }, auth());
+      setThemes(data);
+    } catch { alert('Erro ao gerar temas.'); }
+    finally { setLoadingThemes(false); }
   };
 
-  const handleGenerateContent = async (theme) => {
-    setSelectedTheme({ theme, type: activeTab });
-    setIsLoadingContent(true);
-    setContent('');
-    setError('');
-
+  const generateContent = useCallback(async (theme) => {
+    setSelectedTheme(theme); setContent(''); setLoadingContent(true);
     try {
-      const response = await axios.post(
-        `${API}/ai/generate-content`,
-        {
-          title: theme.title,
-          description: theme.description,
-          content_type: activeTab,
-          niche
-        },
-        getAuthHeaders()
-      );
-      setContent(response.data.content);
-    } catch (err) {
-      setError('Não foi possível gerar o conteúdo para este tema.');
-      console.error('Erro ao gerar conteúdo:', err);
-    } finally {
-      setIsLoadingContent(false);
-    }
-  };
+      const { data } = await axios.post(`${API}/ai/generate-content`, { niche, title: theme.title, description: theme.description, content_type: activeTab }, auth());
+      setContent(data.content);
+    } catch { setContent('Erro ao gerar conteúdo.'); }
+    finally { setLoadingContent(false); }
+  }, [niche, activeTab]);
 
-  const handleSaveContent = async () => {
-    if (!selectedTheme || !content) return;
-
-    try {
-      await axios.post(
-        `${API}/content`,
-        {
-          title: selectedTheme.theme.title,
-          content_type: selectedTheme.type,
-          theme: niche,
-          description: selectedTheme.theme.description,
-          generated_content: content
-        },
-        getAuthHeaders()
-      );
-      alert('Conteúdo salvo com sucesso!');
-    } catch (err) {
-      alert('Erro ao salvar conteúdo');
-      console.error('Erro ao salvar:', err);
-    }
-  };
-
-  const renderThemesList = () => {
-    if (isLoadingThemes) {
-      return (
-        <div className="text-center text-[#CBC8C9]/70 py-8">
-          Buscando ideias estratégicas...
-        </div>
-      );
-    }
-
-    if (!themes || !themes[activeTab] || themes[activeTab].length === 0) {
-      return (
-        <div className="text-center text-[#CBC8C9]/50 py-8">
-          Gere os temas para o seu nicho.
-        </div>
-      );
-    }
-
-    const currentThemes = themes[activeTab];
-    const themeItems = [];
-    
-    for (let i = 0; i < currentThemes.length; i++) {
-      const theme = currentThemes[i];
-      const isSelected = selectedTheme && 
-        selectedTheme.theme.title === theme.title && 
-        selectedTheme.type === activeTab;
-      
-      themeItems.push(
-        <button
-          key={`${activeTab}-${i}`}
-          onClick={() => handleGenerateContent(theme)}
-          className={`w-full text-left p-4 rounded-md transition-colors ${
-            isSelected
-              ? 'bg-[#3A0A16] border border-[#D4AF37]'
-              : 'bg-black/20 hover:bg-[#3A0A16]/50 border border-transparent'
-          }`}
-          data-testid={`theme-item-${i}`}
-        >
-          <h3 className="font-semibold text-white text-sm mb-1">{theme.title}</h3>
-          <p className="text-xs text-[#CBC8C9]/70">{theme.description}</p>
-        </button>
-      );
-    }
-
-    return <div className="space-y-2">{themeItems}</div>;
-  };
+  const currentThemes = themes?.[activeTab] || [];
 
   return (
-    <div className="h-full flex flex-col bg-[#19161B]" data-testid="content-library">
-      <div className="p-6">
-        <div className="flex gap-4 items-center mb-4">
-          <input
-            type="text"
-            value={niche}
-            onChange={(e) => setNiche(e.target.value)}
-            placeholder="Digite seu nicho de mercado"
-            className="flex-grow bg-[#19161B] border border-[#3A0A16] rounded-lg p-3 text-[#CBC8C9] focus:outline-none focus:ring-2 focus:ring-[#53050B]"
-            disabled={isLoadingThemes}
-            data-testid="niche-input"
-          />
-          <button
-            onClick={handleGenerateThemes}
-            disabled={isLoadingThemes || !niche.trim()}
-            className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            data-testid="generate-themes-button"
-          >
-            Gerar Temas
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#080808', overflow: 'hidden' }}>
+      <div style={{ padding: '24px 28px 16px', borderBottom: '1px solid #1A0505' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#E0E0E0', marginBottom: '6px' }}>Biblioteca de Conteúdo</h1>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+          <input value={niche} onChange={e => setNiche(e.target.value)} onKeyDown={e => e.key === 'Enter' && generateThemes()}
+            placeholder="Digite seu nicho de mercado..." className="fire-input" style={{ flex: 1, padding: '10px 14px', fontSize: '13px' }} />
+          <button onClick={generateThemes} disabled={loadingThemes || !niche.trim()} className="fire-btn" style={{ padding: '10px 20px', flexShrink: 0 }}>
+            {loadingThemes ? 'Gerando...' : '✨ Gerar Temas'}
           </button>
         </div>
-        {error && (
-          <p className="text-red-400 text-center mb-4" data-testid="error-message">{error}</p>
-        )}
       </div>
 
-      <div className="flex-1 flex gap-6 px-6 pb-6 overflow-hidden">
-        <div className="w-1/2 flex flex-col border-2 border-[#53050B] rounded-lg overflow-hidden" data-testid="themes-panel">
-          <div className="flex flex-wrap border-b-2 border-[#53050B] bg-black">
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 min-w-[100px] p-3 text-xs font-semibold transition-colors ${
-                  activeTab === tab.key
-                    ? 'bg-[#53050B] text-white'
-                    : 'text-[#CBC8C9]/70 hover:bg-[#3A0A16]/30'
-                }`}
-                data-testid={`tab-${tab.key}`}
-              >
-                {tab.label}
+      {themes && (
+        <>
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: '4px', padding: '12px 28px', borderBottom: '1px solid #1A0505', background: '#0C0C0C' }}>
+            {TABS.map(tab => (
+              <button key={tab} onClick={() => setActiveTab(tab)}
+                style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '500', transition: 'all 0.15s',
+                  background: activeTab === tab ? '#C0392B' : 'transparent', color: activeTab === tab ? '#fff' : '#555' }}>
+                {TAB_LABELS[tab]}
               </button>
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 bg-black/50">
-            {renderThemesList()}
-          </div>
-        </div>
+          <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '280px 1fr', overflow: 'hidden' }}>
+            {/* Lista de temas */}
+            <div style={{ borderRight: '1px solid #1A0505', overflowY: 'auto', padding: '12px' }}>
+              {currentThemes.map((theme, i) => (
+                <button key={i} onClick={() => generateContent(theme)}
+                  style={{ width: '100%', textAlign: 'left', padding: '12px', borderRadius: '8px', border: 'none', cursor: 'pointer', marginBottom: '4px', transition: 'all 0.15s',
+                    background: selectedTheme?.title === theme.title ? 'linear-gradient(135deg, #2A0808, rgba(192,57,43,0.2))' : 'transparent',
+                    borderLeft: selectedTheme?.title === theme.title ? '2px solid #C0392B' : '2px solid transparent' }}>
+                  <p style={{ fontSize: '13px', fontWeight: '500', color: '#CCC', margin: 0 }}>{theme.title}</p>
+                  <p style={{ fontSize: '11px', color: '#555', margin: '3px 0 0' }}>{theme.description}</p>
+                </button>
+              ))}
+            </div>
 
-        <div className="w-1/2 flex flex-col border-2 border-[#53050B] rounded-lg overflow-hidden" data-testid="content-panel">
-          <div className="border-b-2 border-[#53050B] p-4 bg-black flex justify-between items-center">
-            <h2 className="text-xl font-title text-[#CBC8C9]" data-testid="content-title">
-              Roteiro do Conteúdo
-            </h2>
-            {content && (
-              <button
-                onClick={handleSaveContent}
-                className="flex items-center px-4 py-2 bg-[#D4AF37] text-[#19161B] rounded-lg font-semibold hover:bg-[#D4AF37]/80 transition-colors"
-                data-testid="save-content-button"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Salvar
-              </button>
-            )}
+            {/* Roteiro */}
+            <div style={{ overflowY: 'auto', padding: '24px' }}>
+              {loadingContent && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} style={{ height: '16px', background: '#111', borderRadius: '4px', animation: 'pulse 1.5s infinite', width: i % 3 === 0 ? '60%' : '100%' }} />
+                  ))}
+                </div>
+              )}
+              {content && !loadingContent && (
+                <div style={{ background: '#111', border: '1px solid #1E0505', borderRadius: '12px', padding: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 style={{ color: '#E0E0E0', fontSize: '15px', fontWeight: '600', margin: 0 }}>{selectedTheme?.title}</h3>
+                    <button onClick={() => navigator.clipboard.writeText(content)}
+                      style={{ background: 'transparent', border: '1px solid #2A0808', borderRadius: '6px', padding: '6px 12px', color: '#888', cursor: 'pointer', fontSize: '11px' }}>
+                      Copiar
+                    </button>
+                  </div>
+                  <p style={{ color: '#CCC', fontSize: '13px', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>{content}</p>
+                </div>
+              )}
+              {!content && !loadingContent && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#333' }}>
+                  <BookOpen size={32} style={{ marginBottom: '10px', color: '#2A0808' }} />
+                  <p style={{ fontSize: '13px' }}>Selecione um tema para gerar o roteiro</p>
+                </div>
+              )}
+            </div>
           </div>
+        </>
+      )}
 
-          <div className="flex-1 overflow-y-auto p-6 bg-black/50">
-            {isLoadingContent && (
-              <p className="text-center text-[#CBC8C9]/70" data-testid="loading-content">
-                Criando roteiro...
-              </p>
-            )}
-            {content && !isLoadingContent && (
-              <div className="text-[#CBC8C9]/90 whitespace-pre-wrap leading-relaxed" data-testid="generated-content">
-                {content}
-              </div>
-            )}
-            {!content && !isLoadingContent && (
-              <p className="text-center text-[#CBC8C9]/50 mt-16" data-testid="no-content-message">
-                Selecione um tema à esquerda para ver o roteiro aqui.
-              </p>
-            )}
-          </div>
+      {!themes && !loadingThemes && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#333' }}>
+          <Sparkles size={40} style={{ marginBottom: '12px', color: '#2A0808' }} />
+          <p style={{ fontSize: '14px' }}>Digite seu nicho e gere temas estratégicos</p>
         </div>
-      </div>
+      )}
+      <style>{`@keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.6} }`}</style>
     </div>
   );
 }
