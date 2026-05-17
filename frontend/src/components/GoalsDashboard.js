@@ -99,7 +99,7 @@ export default function GoalsDashboard() {
   };
 
   const pct = goal ? Math.min(100, Math.round((goal.current_revenue / goal.monthly_target) * 100)) : 0;
-  const done = actions.filter(a => a.completed).length;
+  const done = (Array.isArray(actions) ? actions : []).filter(a => a.completed).length;
 
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#555' }}>Carregando...</div>;
 
