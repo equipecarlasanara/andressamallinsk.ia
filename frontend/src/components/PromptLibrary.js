@@ -1,265 +1,106 @@
-import { Copy, Check, Terminal, Search, Zap, Target, TrendingUp, Users, Layout, Anchor, Eye, BarChart3, ShieldAlert } from 'lucide-react';
 import { useState } from 'react';
+import { Copy, Check } from 'lucide-react';
 
 const promptCategories = [
-    {
-        name: "🔍 Diagnóstico",
-        icon: Search,
-        prompts: [
-            {
-                id: 1,
-                title: "Diagnóstico Completo",
-                description: "Gere um diagnóstico estratégico real do seu momento.",
-                command: "Meu nome é ______. Vou responder suas perguntas sobre meu negócio e quero que você gere um diagnóstico estratégico real do meu momento. Com base nas minhas respostas: - Classifique o estágio do meu negócio - Identifique o gargalo dominante - Mostre onde o dinheiro está travado - Defina prioridade única - Gere um plano de 7 dias Seja direta, estratégica e sem respostas genéricas."
-            },
-            {
-                id: 2,
-                title: "Diagnóstico Rápido de Gargalo",
-                description: "Descubra onde você está perdendo dinheiro agora.",
-                command: "Essa é a realidade atual do meu negócio: ______. Sem rodeios, me diga: - Onde está meu principal gargalo? - O que está me fazendo perder dinheiro? - O que eu preciso parar de fazer imediatamente? - Qual deve ser meu foco único nos próximos 15 dias?"
-            }
-        ]
-    },
-    {
-        name: "📱 Perfil IG",
-        icon: Eye,
-        prompts: [
-            {
-                id: 3,
-                title: "Análise Estratégica de Perfil",
-                description: "Auditoria completa do seu perfil Instagram.",
-                command: "Esse é meu perfil atual: Nome: Bio: Posicionamento: Paleta de cores: Tipo de conteúdo: Oferta principal: Faça uma análise estratégica do meu perfil considerando: - Clareza de posicionamento - Autoridade - Capacidade de conversão - Alinhamento com minha oferta Me diga o que manter, o que cortar e o que ajustar."
-            },
-            {
-                id: 4,
-                title: "Bio Magnética",
-                description: "3 versões de bio estratégicas focadas em venda.",
-                command: "Minha oferta é: Meu público é: Meu diferencial é: Crie 3 versões de bio estratégica focadas em conversão e clareza. Nada genérico. Quero posicionamento forte."
-            },
-            {
-                id: 5,
-                title: "Auditoria de Conteúdo",
-                description: "Seu conteúdo gera autoridade ou só barulho?",
-                command: "Esse é o tipo de conteúdo que eu posto: ______. Analise se ele gera: - Autoridade - Desejo - Conversão Se não estiver estratégico, me diga o que ajustar e qual linha editorial seguir."
-            }
-        ]
-    },
-    {
-        name: "🧠 Estrategista",
-        icon: Target,
-        prompts: [
-            {
-                id: 6,
-                title: "Plano 30 Dias",
-                description: "Plano mensal, semanal e diário estratégico.",
-                command: "Esse é meu diagnóstico completo: ______. Leia com atenção e crie: - Plano mensal estratégico - Plano semanal com foco diferente a cada semana - Plano diário (segunda a sexta) - Métrica principal de acompanhamento Sem repetir tarefas iguais entre semanas."
-            },
-            {
-                id: 7,
-                title: "Ajuste de Estratégia",
-                description: "Correção de rota no meio do ciclo.",
-                command: "Estou no dia ___ do meu plano de 30 dias. Esses são meus resultados até agora: ______. Analise os números e me diga: - O que manter - O que ajustar - O que cortar - Qual deve ser o foco da próxima semana"
-            }
-        ]
-    },
-    {
-        name: "🌪️ Funis",
-        icon: Layout,
-        prompts: [
-            {
-                id: 8,
-                title: "Construção de Funil",
-                description: "Funil personalizado para seu estágio.",
-                command: "Essa é a realidade atual do meu negócio: ______. Minha meta é: ______. Crie um funil de vendas estratégico baseado no meu estágio atual. Defina: - Etapa de aquisição - Qualificação - Conversão - Follow-up - Métricas Não crie funil genérico."
-            },
-            {
-                id: 9,
-                title: "Funil para High Ticket",
-                description: "Estratégia para produtos de alto valor.",
-                command: "Meu produto high ticket é: ______. Meu ticket médio é: ______. Crie um funil estratégico adequado para high ticket. Defina o que deve ser humano e o que pode ser automatizado."
-            },
-            {
-                id: 10,
-                title: "Diagnóstico de Funil",
-                description: "Encontre os vazamentos do seu funil atual.",
-                command: "Meu funil atual funciona assim: ______. Identifique: - Onde está o vazamento - O que está desalinhado - Qual é o gargalo dominante - O que deve ser ajustado primeiro"
-            }
-        ]
-    },
-    {
-        name: "💰 Vendas",
-        icon: Zap,
-        prompts: [
-            {
-                id: 11,
-                title: "Roteiro de Conversa",
-                description: "Script estratégico para Direct/Whats.",
-                command: "Meu produto é: Meu público é: Objeção mais comum é: Crie um roteiro estratégico de conversa no direct com: - Abertura - Qualificação - Condução - Transição para proposta - Follow-up"
-            },
-            {
-                id: 12,
-                title: "Resposta 'Vou Pensar'",
-                description: "Como reverter sem perder autoridade.",
-                command: "Recebi essa resposta: “vou pensar”. Crie uma resposta estratégica que: - Não pressione - Não desvalorize o preço - Conduza para decisão - Mantenha autoridade"
-            },
-            {
-                id: 13,
-                title: "Aumento de Ticket",
-                description: "Analise por que você está vendendo barato.",
-                command: "Quero aumentar meu ticket médio. Hoje eu vendo por ______. Analise se meu problema é: - Oferta - Percepção de valor - Público errado - Conversão fraca E me diga o que ajustar primeiro."
-            }
-        ]
-    },
-    {
-        name: "📈 Métricas",
-        icon: TrendingUp,
-        prompts: [
-            {
-                id: 14,
-                title: "Análise de Números",
-                description: "Transforme dados brutos em lucro.",
-                command: "Esses são meus números: Leads semanais: Conversas iniciadas: Propostas enviadas: Vendas fechadas: Ticket médio: Faça uma análise estratégica. Onde está o gargalo? Qual deve ser meu foco?"
-            },
-            {
-                id: 15,
-                title: "Pronto para Escalar?",
-                description: "Valide se sua estrutura aguenta o próximo nível.",
-                command: "Minha estrutura hoje é: Oferta: Conversão: Equipe: Analise se estou pronta para escalar. Se não estiver, o que precisa estar sólido antes?"
-            }
-        ]
-    },
-    {
-        name: "🏗️ Processos",
-        icon: Anchor,
-        prompts: [
-            {
-                id: 16,
-                title: "Criar Playbook Comercial",
-                description: "Estruture sua máquina de vendas.",
-                command: "Quero estruturar meu processo de vendas. Hoje ele funciona assim: ______. Crie um playbook simples com: - Etapas - Responsáveis - Métricas - Rotina diária"
-            },
-            {
-                id: 17,
-                title: "Delegação Estratégica",
-                description: "O que passar para equipe para crescer.",
-                command: "Tenho ___ pessoas na equipe. Essas são as funções atuais: ______. Me diga o que devo delegar primeiro para destravar crescimento."
-            }
-        ]
-    },
-    {
-        name: "🏆 Autoridade",
-        icon: BarChart3,
-        prompts: [
-            {
-                id: 18,
-                title: "Diferenciação de Mercado",
-                description: "Destaque-se em um mercado saturado.",
-                command: "Meu nicho é: Meus concorrentes fazem: Me ajude a criar diferenciação real. Quero fugir do posicionamento genérico."
-            },
-            {
-                id: 19,
-                title: "Mensagem Magnética",
-                description: "Fale o que seu cliente precisa ouvir.",
-                command: "Minha oferta é: Minha cliente ideal sente: Crie uma mensagem forte que gere: - Identificação - Autoridade - Desejo de conversar"
-            }
-        ]
-    },
-    {
-        name: "🎯 Foco Único",
-        icon: ShieldAlert,
-        prompts: [
-            {
-                id: 20,
-                title: "Foco Único",
-                description: "A prioridade máxima dos seus próximos 14 dias.",
-                command: "Estou confusa e fazendo muitas coisas ao mesmo tempo. Minha realidade atual é: ______. Me diga: - O que cortar - O que manter - O que priorizar - Qual deve ser o foco único pelos próximos 14 dias"
-            }
-        ]
-    }
+  { name: "🔍 Diagnóstico", prompts: [
+    { id: 1, title: "Diagnóstico Completo", description: "Gere um diagnóstico estratégico real do seu momento.", command: "Meu nome é ______. Vou responder suas perguntas sobre meu negócio e quero que você gere um diagnóstico estratégico real do meu momento. Com base nas minhas respostas: - Classifique o estágio do meu negócio - Identifique o gargalo dominante - Mostre onde o dinheiro está travado - Defina prioridade única - Gere um plano de 7 dias. Seja direta, estratégica e sem respostas genéricas." },
+    { id: 2, title: "Diagnóstico Rápido de Gargalo", description: "Descubra onde você está perdendo dinheiro agora.", command: "Essa é a realidade atual do meu negócio: ______. Sem rodeios, me diga: - Onde está meu principal gargalo? - O que está me fazendo perder dinheiro? - O que eu preciso parar de fazer imediatamente? - Qual deve ser meu foco único nos próximos 15 dias?" },
+  ]},
+  { name: "👁️ Perfil IG", prompts: [
+    { id: 3, title: "Análise de Perfil Estratégico", description: "Diagnóstico completo do seu Instagram.", command: "Analise meu perfil do Instagram com olhar estratégico: [cole aqui o link ou descreva seu perfil]. Quero saber: - O que está funcionando - O que está repelindo clientes - Como melhorar minha bio - Que tipo de conteúdo devo priorizar - Como aumentar minha conversão pelo perfil" },
+  ]},
+  { name: "🎯 Estrategista", prompts: [
+    { id: 4, title: "Plano 30 Dias", description: "Plano mensal, semanal e diário estratégico.", command: "Com base no meu negócio [descreva], crie um plano estratégico de 30 dias com: - Meta principal do mês - 4 objetivos semanais - Ações diárias prioritárias - Métricas de acompanhamento - O que eliminar do meu dia" },
+    { id: 5, title: "Ajuste de Estratégia", description: "Correção de rota no meio do ciclo.", command: "Estou no meio do mês e meus resultados são: [descreva]. O que planejei foi: [descreva]. O que está funcionando: [descreva]. O que não está: [descreva]. Me dê um ajuste de rota para recuperar o mês." },
+  ]},
+  { name: "📊 Funis", prompts: [
+    { id: 6, title: "Construtor de Funil", description: "Monte seu funil de vendas completo.", command: "Meu produto/serviço é: [descreva]. Meu cliente ideal é: [descreva]. Meu ticket médio é: R$ ______. Monte um funil de vendas completo com: topo, meio, fundo e fechamento. Inclua os gatilhos certos para cada etapa." },
+  ]},
+  { name: "💰 Vendas", prompts: [
+    { id: 7, title: "Script de Vendas no DM", description: "Feche mais vendas pelo direct.", command: "Meu produto é [descreva] e custa R$ ______. Crie um script de vendas para DM do Instagram que: - Qualifique o lead - Apresente o valor - Contorne objeções comuns - Feche com urgência real" },
+  ]},
+  { name: "📈 Métricas", prompts: [
+    { id: 8, title: "Raio-X Financeiro", description: "Entenda seus números de verdade.", command: "Meu faturamento bruto mensal é R$ ______. Meus custos fixos são R$ ______. Meus custos variáveis são R$ ______. Meu lucro líquido é R$ ______. Analise minha saúde financeira e me diga o que preciso mudar para ter mais margem." },
+  ]},
+  { name: "⚓ Processos", prompts: [
+    { id: 9, title: "Automatizar e Delegar", description: "Pare de fazer tudo sozinha.", command: "Essas são as tarefas que faço no meu negócio: [liste]. Me diga: - O que devo eliminar - O que devo automatizar - O que devo delegar - O que só eu posso fazer - Como criar um processo para cada área" },
+  ]},
+  { name: "📣 Autoridade", prompts: [
+    { id: 10, title: "Posicionamento de Autoridade", description: "Seja reconhecida como referência.", command: "Meu nicho é [descreva]. Minha transformação principal é [descreva]. Meus diferenciais são [descreva]. Crie uma estratégia de posicionamento de autoridade para eu ser reconhecida como referência no meu mercado nos próximos 60 dias." },
+  ]},
+  { name: "🎯 Foco Único", prompts: [
+    { id: 11, title: "Uma Coisa Só", description: "Qual é o seu foco único agora?", command: "Minha situação atual é: [descreva]. Minha meta é: [descreva]. Meu maior problema é: [descreva]. Com tudo isso em mente, me diga UMA ÚNICA COISA que devo focar nos próximos 21 dias para ter resultado real." },
+  ]},
 ];
 
 export default function PromptLibrary() {
-    const [copiedId, setCopiedId] = useState(null);
-    const [activeCategory, setActiveCategory] = useState(promptCategories[0].name);
+  const [activeCategory, setActiveCategory] = useState(0);
+  const [copied, setCopied] = useState(null);
 
-    const handleCopy = (id, text) => {
-        navigator.clipboard.writeText(text);
-        setCopiedId(id);
-        setTimeout(() => setCopiedId(null), 2000);
-    };
+  const copyToClipboard = (text, id) => {
+    navigator.clipboard.writeText(text);
+    setCopied(id);
+    setTimeout(() => setCopied(null), 2000);
+  };
 
-    const currentPrompts = promptCategories.find(c => c.name === activeCategory)?.prompts || [];
+  const cat = promptCategories[activeCategory];
 
-    return (
-        <div className="h-full flex flex-col bg-[#19161B] overflow-hidden">
-            {/* Header */}
-            <div className="p-8 pb-4 shrink-0">
-                <h1 className="text-4xl font-title text-[#D4AF37] mb-2 shadow-sm">Biblioteca de Prompts</h1>
-                <p className="text-[#CBC8C9]/60 max-w-2xl leading-relaxed">
-                    Comandos de elite da mentoria Andressa Mallinsk. Copie e cole na <span className="text-[#D4AF37]">Estrategista Digital</span> para execução imediata.
-                </p>
-            </div>
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#080808', overflow: 'hidden' }}>
+      {/* Header */}
+      <div style={{ padding: '24px 28px 16px', borderBottom: '1px solid #1A0505' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#E0E0E0', margin: 0 }}>Biblioteca de Prompts</h1>
+        <p style={{ color: '#555', fontSize: '13px', marginTop: '4px' }}>Comandos de elite da metodologia Andressa Mallinsk</p>
+      </div>
 
-            {/* Categorias */}
-            <div className="flex gap-2 overflow-x-auto px-8 py-4 scrollbar-hide border-b border-[#3A0A16]/30 shrink-0">
-                {promptCategories.map((cat, idx) => (
-                    <button
-                        key={idx}
-                        onClick={() => setActiveCategory(cat.name)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all text-sm font-medium ${activeCategory === cat.name
-                                ? 'bg-[#D4AF37] text-black shadow-lg shadow-[#D4AF37]/20 border border-transparent'
-                                : 'bg-[#2A262D] text-[#CBC8C9]/60 border border-[#3A0A16] hover:border-[#D4AF37]/30'
-                            }`}
-                    >
-                        <cat.icon className="w-4 h-4" />
-                        {cat.name}
-                    </button>
-                ))}
-            </div>
-
-            {/* Prompts Cards */}
-            <div className="flex-1 overflow-y-auto p-8 pt-6 pb-20 scrollbar-hide">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
-                    {currentPrompts.map((p) => (
-                        <div
-                            key={p.id}
-                            className="bg-[#2A262D] border border-[#3A0A16] rounded-2xl p-6 hover:border-[#D4AF37]/30 transition-all group flex flex-col justify-between shadow-2xl relative overflow-hidden"
-                        >
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-[#D4AF37]/10 transition-all"></div>
-
-                            <div className="relative">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="p-2 bg-[#D4AF37]/10 rounded-lg group-hover:bg-[#D4AF37]/20 transition-all">
-                                        <Terminal className="w-4 h-4 text-[#D4AF37]" />
-                                    </div>
-                                    <h3 className="font-bold text-white text-lg tracking-tight">{p.title}</h3>
-                                </div>
-                                <p className="text-sm text-[#CBC8C9]/70 mb-6 leading-relaxed">
-                                    {p.description}
-                                </p>
-                            </div>
-
-                            <button
-                                onClick={() => handleCopy(p.id, p.command)}
-                                className={`relative flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-bold tracking-wide uppercase text-xs ${copiedId === p.id
-                                        ? 'bg-green-500/20 text-green-400 border border-green-500/40'
-                                        : 'bg-[#53050B] text-white hover:bg-[#7a0710] border border-[#7a0710]/50 shadow-lg'
-                                    }`}
-                            >
-                                {copiedId === p.id ? (
-                                    <><Check className="w-4 h-4" /> Comandei!</>
-                                ) : (
-                                    <><Copy className="w-4 h-4" /> Copiar Comando</>
-                                )}
-                            </button>
-                        </div>
-                    ))}
-
-                    <div className="col-span-1 md:col-span-2 mt-8 text-center">
-                        <p className="text-[10px] text-[#CBC8C9]/20 uppercase tracking-[0.3em]">Exclusivo para Mentoradas Andressa Mallinsk</p>
-                    </div>
-                </div>
-            </div>
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* Sidebar categorias */}
+        <div style={{ width: '200px', borderRight: '1px solid #1A0505', padding: '16px 8px', overflowY: 'auto', flexShrink: 0 }}>
+          {promptCategories.map((cat, i) => (
+            <button key={i} onClick={() => setActiveCategory(i)}
+              style={{
+                width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: '8px',
+                border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: activeCategory === i ? '600' : '400',
+                marginBottom: '2px', transition: 'all 0.15s',
+                background: activeCategory === i ? 'linear-gradient(135deg, #2A0808, rgba(192,57,43,0.2))' : 'transparent',
+                borderLeft: activeCategory === i ? '2px solid #C0392B' : '2px solid transparent',
+                color: activeCategory === i ? '#E0E0E0' : '#666',
+              }}>
+              {cat.name}
+            </button>
+          ))}
         </div>
-    );
+
+        {/* Prompts */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {cat.prompts.map(prompt => (
+              <div key={prompt.id} style={{ background: '#111', border: '1px solid #1E0505', borderRadius: '12px', padding: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <div>
+                    <h3 style={{ color: '#E0E0E0', fontSize: '15px', fontWeight: '600', margin: 0 }}>{prompt.title}</h3>
+                    <p style={{ color: '#666', fontSize: '13px', marginTop: '4px' }}>{prompt.description}</p>
+                  </div>
+                  <button onClick={() => copyToClipboard(prompt.command, prompt.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px',
+                      background: copied === prompt.id ? '#0A2E1A' : 'linear-gradient(135deg, #7A1010, #C0392B)',
+                      border: 'none', borderRadius: '8px', color: copied === prompt.id ? '#3ECF8E' : '#fff',
+                      fontSize: '12px', fontWeight: '500', cursor: 'pointer', flexShrink: 0, marginLeft: '16px',
+                      transition: 'all 0.2s',
+                    }}>
+                    {copied === prompt.id ? <><Check size={13} /> Copiado!</> : <><Copy size={13} /> Copiar</>}
+                  </button>
+                </div>
+                <div style={{ background: '#0A0A0A', border: '1px solid #1A0505', borderRadius: '8px', padding: '12px 16px', marginTop: '12px' }}>
+                  <p style={{ color: '#888', fontSize: '12px', lineHeight: '1.6', margin: 0, fontFamily: 'monospace' }}>{prompt.command}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p style={{ color: '#333', fontSize: '11px', textAlign: 'center', marginTop: '24px' }}>Exclusivo para Mentoradas Andressa Mallinsk 🔥</p>
+        </div>
+      </div>
+    </div>
+  );
 }
