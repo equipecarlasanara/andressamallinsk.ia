@@ -41,7 +41,7 @@ export default function GoalsDashboard() {
         axios.get(`${API}/weekly-actions?week_start=${ws}`, auth()),
         axios.get(`${API}/leads`, auth()),
       ]);
-      setGoal(g.data); setActions(a.data || []); setLeads(l.data || []);
+      setGoal(g.data); setActions(Array.isArray(a.data) ? a.data : []); setLeads(Array.isArray(l.data) ? l.data : []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, [ws]);
@@ -65,21 +65,21 @@ export default function GoalsDashboard() {
     if (!newAction.trim()) return;
     try {
       const { data } = await axios.post(`${API}/weekly-actions`, { title: newAction, week_start: ws }, auth());
-      setActions(a => [...a, data]); setNewAction('');
+      setActions(a => [...(Array.isArray(a) ? a : []), data]); setNewAction('');
     } catch {}
   };
 
   const toggleAction = async (id, done) => {
     try {
       const { data } = await axios.patch(`${API}/weekly-actions/${id}`, { completed: !done }, auth());
-      setActions(a => a.map(x => x.id === id ? { ...x, completed: data.completed } : x));
+      setActions(a => (Array.isArray(a) ? a : []).map(x => x.id === id ? { ...x, completed: data.completed } : x));
     } catch {}
   };
 
   const deleteAction = async (id) => {
     try {
       await axios.delete(`${API}/weekly-actions/${id}`, auth());
-      setActions(a => a.filter(x => x.id !== id));
+      setActions(a => (Array.isArray(a) ? a : []).filter(x => x.id !== id));
     } catch {}
   };
 
@@ -87,7 +87,7 @@ export default function GoalsDashboard() {
     if (!newLead.name || !newLead.phone) return;
     try {
       const { data } = await axios.post(`${API}/leads`, newLead, auth());
-      setLeads(l => [...l, data]); setNewLead({ name: '', phone: '', stage: 'novo' }); setShowLeadForm(false);
+      setLeads(l => [...(Array.isArray(l) ? l : []), data]); setNewLead({ name: '', phone: '', stage: 'novo' }); setShowLeadForm(false);
     } catch {}
   };
 
