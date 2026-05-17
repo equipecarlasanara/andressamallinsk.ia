@@ -76,3 +76,51 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   50% { box-shadow: 0 0 0 8px transparent; }
 }
 .animate-fade-up { animation: fadeUp 0.3s ease-out; }
+
+/* ===== OVERRIDE ESTILOS ANTIGOS COM IDENTIDADE FIRE ===== */
+.min-h-screen, .h-full, .h-screen { background: var(--bg) !important; }
+
+/* Títulos */
+h1, h2, h3 { color: var(--text) !important; font-family: 'Inter', sans-serif !important; }
+
+/* Cards e containers */
+.bg-\[\#1a1a2e\], .bg-\[\#16213e\], .bg-\[\#0f3460\], 
+.bg-gray-800, .bg-gray-900, .bg-zinc-800, .bg-zinc-900,
+.bg-\[\#19161B\], .bg-\[\#2A262D\] {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+/* Botões primários */
+.bg-\[\#D4AF37\], .bg-yellow-500, .bg-amber-500 {
+  background: linear-gradient(135deg, #7A1010, #C0392B) !important;
+  box-shadow: 0 4px 15px rgba(192,57,43,0.3) !important;
+}
+
+/* Texto dourado vira vermelho */
+.text-\[\#D4AF37\], .text-yellow-400, .text-amber-400 {
+  color: #C0392B !important;
+}
+
+/* Bordas douradas viram vermelhas */
+.border-\[\#D4AF37\], .border-yellow-400 {
+  border-color: #C0392B !important;
+}
+
+/* Inputs */
+input, textarea, select {
+  background: rgba(255,255,255,0.03) !important;
+  border-color: var(--border-red) !important;
+  color: var(--text) !important;
+  font-family: 'Inter', sans-serif !important;
+}
+input:focus, textarea:focus {
+  border-color: var(--red) !important;
+}
+
+/* Sidebar ativa */
+.bg-\[\#3A0A16\] { background: #2A0808 !important; }
+.text-\[\#CBC8C9\] { color: var(--text) !important; }
+
+/* Scrollbar */
+* { scrollbar-width: thin; scrollbar-color: var(--red-dark) transparent; }
