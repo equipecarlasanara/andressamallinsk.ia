@@ -665,16 +665,27 @@ Finalize com CTA direto para DM. Voz firme e direta da Estrategista.`;
       // Carregar plano de ação da mentorada para personalizar o contexto
       const [planDoc] = await dbQuery(env, "SELECT content, filename FROM action_plans WHERE user_id = ?", [userId]);
       let systemPrompt = ESTRATEGISTA_SYSTEM;
-      if (planDoc) {
-        systemPrompt += `\n\n====== PLANO DE AÇÃO INDIVIDUAL DA MENTORADA ======\nArquivo: ${planDoc.filename}\n\n${planDoc.content}\n====== FIM DO PLANO ======\n\nIMPORTANTE: Use este plano como base para TODAS as suas respostas. Quando a mentorada chegar pela primeira vez ou enviar o plano, pergunte: "A partir do seu plano de ação, gostaria de receber as ações desta semana?" Se ela confirmar, gere as ações usando o marcador PROJETAR_TAREFA.`;
+      if (planDoc && planDoc.content) {
+        // Limita o plano a 3000 caracteres para não exceder o contexto
+        const planContent = planDoc.content.slice(0, 3000);
+        systemPrompt += `\n\n====== PLANO DE AÇÃO DA MENTORADA (${planDoc.filename}) ======\n${planContent}\n====== FIM DO PLANO ======\n\nIMPORTANTE: Use este plano como base. Se a mentorada confirmar que quer as ações da semana, gere de 3 a 5 ações específicas usando o formato: PROJETAR_TAREFA: [título] | [descrição breve]`;
       } else if (!history.length) {
-        systemPrompt += "\n\nA mentorada ainda não enviou o Plano de Ação Individual. Na primeira mensagem, oriente: 'Para eu te ajudar de forma personalizada, faça o upload do seu Plano de Ação Individual (PDF) clicando no botão 📎 acima.'";
+        systemPrompt += "\n\nA mentorada ainda não enviou o Plano de Ação. Oriente-a a clicar em 'Plano de Ação' acima para fazer o upload do PDF.";
       }
 
-      // Passar PDF do plano para o Gemini se for a primeira mensagem com o plano
-      const planBase64 = body.plan_pdf || null;
-
-      const { text: response } = await callGemini(env.GEMINI_API_KEY, "gemini-2.0-flash", systemPrompt, history, body.message, planBase64);
+      let response;
+      try {
+        const result = await callGemini(env.GEMINI_API_KEY, "gemini-2.0-flash", systemPrompt, history.slice(-10), body.message);
+        response = result.text;
+      } catch (geminiError) {
+        // Tenta sem histórico em caso de erro
+        try {
+          const result = await callGemini(env.GEMINI_API_KEY, "gemini-2.0-flash", ESTRATEGISTA_SYSTEM, [], body.message);
+          response = result.text;
+        } catch (e2) {
+          return error("A Estrategista está indisponível no momento. Tente novamente em alguns segundos.", 503);
+        }
+      }
 
       // Atualizar histórico
       const newHistory = [...history,
