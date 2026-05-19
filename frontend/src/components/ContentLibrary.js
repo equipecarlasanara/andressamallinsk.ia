@@ -72,7 +72,7 @@ export default function ContentLibrary() {
                     background: selectedTheme?.title === theme.title ? 'linear-gradient(135deg, #2A0808, rgba(192,57,43,0.2))' : 'transparent',
                     borderLeft: selectedTheme?.title === theme.title ? '2px solid #C0392B' : '2px solid transparent' }}>
                   <p style={{ fontSize: '13px', fontWeight: '500', color: '#CCC', margin: 0 }}>{theme.title}</p>
-                  <p style={{ fontSize: '11px', color: '#555', margin: '3px 0 0' }}>{theme.description}</p>
+                  <p style={{ fontSize: '11px', color: '#999', margin: '3px 0 0' }}>{theme.description}</p>
                 </button>
               ))}
             </div>
@@ -99,7 +99,7 @@ export default function ContentLibrary() {
                 </div>
               )}
               {!content && !loadingContent && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#333' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#777' }}>
                   <BookOpen size={32} style={{ marginBottom: '10px', color: '#2A0808' }} />
                   <p style={{ fontSize: '13px' }}>Selecione um tema para gerar o roteiro</p>
                 </div>
@@ -110,7 +110,7 @@ export default function ContentLibrary() {
       )}
 
       {!themes && !loadingThemes && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#333' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#777' }}>
           <Sparkles size={40} style={{ marginBottom: '12px', color: '#2A0808' }} />
           <p style={{ fontSize: '14px' }}>Digite seu nicho e gere temas estratégicos</p>
         </div>

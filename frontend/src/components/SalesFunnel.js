@@ -28,7 +28,7 @@ export default function SalesFunnel() {
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#080808' }}>
       <div style={{ padding: '20px 24px', borderBottom: '1px solid #1A0505', background: '#0C0C0C' }}>
         <h1 style={{ fontSize: '20px', fontWeight: '700', color: '#E0E0E0', margin: 0 }}>Construtor de Funil de Vendas</h1>
-        <p style={{ color: '#555', fontSize: '12px', marginTop: '4px' }}>Metodologia Andressa Mallinsk</p>
+        <p style={{ color: '#999', fontSize: '12px', marginTop: '4px' }}>Metodologia Andressa Mallinsk</p>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>

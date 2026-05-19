@@ -33,7 +33,7 @@ export default function ProfileAnalysis() {
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: '28px', background: '#080808' }}>
       <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#E0E0E0', marginBottom: '6px' }}>Análise de Perfil</h1>
-      <p style={{ color: '#555', fontSize: '13px', marginBottom: '28px' }}>Envie um print do seu perfil do Instagram e receba uma análise estratégica completa.</p>
+      <p style={{ color: '#999', fontSize: '13px', marginBottom: '28px' }}>Envie um print do seu perfil do Instagram e receba uma análise estratégica completa.</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', maxWidth: '900px' }}>
         {/* Upload */}
@@ -49,14 +49,14 @@ export default function ProfileAnalysis() {
             ) : (
               <>
                 <Upload size={28} style={{ color: '#C0392B', margin: '0 auto 8px' }} />
-                <p style={{ color: '#666', fontSize: '13px' }}>Clique para enviar o print</p>
+                <p style={{ color: '#AAA', fontSize: '13px' }}>Clique para enviar o print</p>
               </>
             )}
             <input type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
           </label>
 
           <div style={{ marginTop: '16px' }}>
-            <label style={{ display: 'block', fontSize: '11px', color: '#666', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '11px', color: '#AAA', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
               Identidade Visual e Posicionamento
             </label>
             <textarea value={visualIdentity} onChange={e => setVisualIdentity(e.target.value)}
@@ -92,7 +92,7 @@ export default function ProfileAnalysis() {
             </div>
           )}
           {!result && !loading && (
-            <p style={{ color: '#333', fontSize: '13px', textAlign: 'center', marginTop: '40px' }}>
+            <p style={{ color: '#777', fontSize: '13px', textAlign: 'center', marginTop: '40px' }}>
               Envie um print e clique em Analisar
             </p>
           )}

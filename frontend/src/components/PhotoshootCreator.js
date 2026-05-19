@@ -40,27 +40,27 @@ export default function PhotoshootCreator() {
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: '28px', background: '#080808' }}>
       <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#E0E0E0', marginBottom: '6px' }}>Criar Ensaio Fotográfico</h1>
-      <p style={{ color: '#555', fontSize: '13px', marginBottom: '28px' }}>Envie uma foto sua e descreva o ensaio. A IA gera fotos profissionais mantendo sua identidade.</p>
+      <p style={{ color: '#999', fontSize: '13px', marginBottom: '28px' }}>Envie uma foto sua e descreva o ensaio. A IA gera fotos profissionais mantendo sua identidade.</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px' }}>
         {/* Config */}
         <div style={{ background: '#111', border: '1px solid #1E0505', borderRadius: '12px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '11px', color: '#666', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '11px', color: '#AAA', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
               Foto Base (opcional)
             </label>
             <label style={{ display: 'block', border: '2px dashed #2A0808', borderRadius: '10px', padding: '20px', textAlign: 'center', cursor: 'pointer' }}>
               {baseImage ? (
                 <img src={baseImage.preview} alt="" style={{ maxWidth: '100%', maxHeight: '120px', borderRadius: '6px', objectFit: 'cover' }} />
               ) : (
-                <><Upload size={20} style={{ color: '#C0392B', margin: '0 auto 6px' }} /><p style={{ color: '#555', fontSize: '12px' }}>Enviar foto base</p></>
+                <><Upload size={20} style={{ color: '#C0392B', margin: '0 auto 6px' }} /><p style={{ color: '#999', fontSize: '12px' }}>Enviar foto base</p></>
               )}
               <input type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
             </label>
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '11px', color: '#666', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '11px', color: '#AAA', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
               Descrição do Ensaio
             </label>
             <textarea value={prompt} onChange={e => setPrompt(e.target.value)}
@@ -69,7 +69,7 @@ export default function PhotoshootCreator() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '11px', color: '#666', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '11px', color: '#AAA', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
               Quantidade de Fotos
             </label>
             <select value={numImages} onChange={e => setNumImages(+e.target.value)} className="fire-input" style={{ fontSize: '13px' }}>
@@ -77,7 +77,7 @@ export default function PhotoshootCreator() {
             </select>
           </div>
 
-          <div style={{ fontSize: '11px', color: '#444', textAlign: 'center' }}>{used}/20 usadas hoje</div>
+          <div style={{ fontSize: '11px', color: '#888', textAlign: 'center' }}>{used}/20 usadas hoje</div>
 
           <button onClick={generate} disabled={loading || !prompt.trim()} className="fire-btn" style={{ width: '100%', padding: '12px' }}>
             {loading ? 'Gerando...' : '📸 Gerar Ensaio'}
@@ -107,7 +107,7 @@ export default function PhotoshootCreator() {
             </div>
           )}
           {!loading && images.length === 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '300px', color: '#333' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '300px', color: '#777' }}>
               <Camera size={40} style={{ marginBottom: '12px', color: '#2A0808' }} />
               <p style={{ fontSize: '14px' }}>Seu ensaio fotográfico aparecerá aqui</p>
             </div>

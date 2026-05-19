@@ -32,7 +32,7 @@ export default function ObjectionExterminator() {
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: '28px', background: '#080808' }}>
       <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#E0E0E0', marginBottom: '6px' }}>Exterminador de Objeção</h1>
-      <p style={{ color: '#555', fontSize: '13px', marginBottom: '28px' }}>Envie o print da conversa e receba o script exato para reverter e fechar.</p>
+      <p style={{ color: '#999', fontSize: '13px', marginBottom: '28px' }}>Envie o print da conversa e receba o script exato para reverter e fechar.</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', maxWidth: '900px' }}>
         {/* Upload */}
@@ -48,7 +48,7 @@ export default function ObjectionExterminator() {
             ) : (
               <>
                 <Upload size={28} style={{ color: '#C0392B', margin: '0 auto 8px' }} />
-                <p style={{ color: '#666', fontSize: '13px' }}>Clique para enviar o print da conversa</p>
+                <p style={{ color: '#AAA', fontSize: '13px' }}>Clique para enviar o print da conversa</p>
               </>
             )}
             <input type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
@@ -73,7 +73,7 @@ export default function ObjectionExterminator() {
               ) : result ? (
                 <p style={{ color: '#CCC', fontSize: '13px', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{result[key]}</p>
               ) : (
-                <p style={{ color: '#333', fontSize: '12px' }}>Aguardando análise...</p>
+                <p style={{ color: '#777', fontSize: '12px' }}>Aguardando análise...</p>
               )}
             </div>
           ))}

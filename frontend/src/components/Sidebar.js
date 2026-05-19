@@ -18,8 +18,8 @@ export default function Sidebar({ active, setActive, user, onLogout }) {
 
       {/* Logo */}
       <div style={{ textAlign: 'center', paddingBottom: '20px', borderBottom: '1px solid #1A0505', marginBottom: '16px' }}>
-        <img src="/logo-fire-branco.png" alt="Estrategista Fire"
-          style={{ width: '130px', filter: 'drop-shadow(0 0 12px rgba(192,57,43,0.4))' }} />
+        <img src="/logo-fire-preto.png" alt="Estrategista Fire"
+          style={{ width: '100px', filter: 'drop-shadow(0 0 15px rgba(192,57,43,0.6)) invert(1)', mixBlendMode: 'screen' }} />
         {user && <p style={{ color: '#444', fontSize: '11px', marginTop: '8px', letterSpacing: '0.05em' }}>{user.name}</p>}
       </div>
 

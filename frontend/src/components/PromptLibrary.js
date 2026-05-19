@@ -50,7 +50,7 @@ export default function PromptLibrary() {
       {/* Header */}
       <div style={{ padding: '24px 28px 16px', borderBottom: '1px solid #1A0505' }}>
         <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#E0E0E0', margin: 0 }}>Biblioteca de Prompts</h1>
-        <p style={{ color: '#555', fontSize: '13px', marginTop: '4px' }}>Comandos de elite da metodologia Andressa Mallinsk</p>
+        <p style={{ color: '#999', fontSize: '13px', marginTop: '4px' }}>Comandos de elite da metodologia Andressa Mallinsk</p>
       </div>
 
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
@@ -79,7 +79,7 @@ export default function PromptLibrary() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                   <div>
                     <h3 style={{ color: '#E0E0E0', fontSize: '15px', fontWeight: '600', margin: 0 }}>{prompt.title}</h3>
-                    <p style={{ color: '#666', fontSize: '13px', marginTop: '4px' }}>{prompt.description}</p>
+                    <p style={{ color: '#AAA', fontSize: '13px', marginTop: '4px' }}>{prompt.description}</p>
                   </div>
                   <button onClick={() => copyToClipboard(prompt.command, prompt.id)}
                     style={{
@@ -98,7 +98,7 @@ export default function PromptLibrary() {
               </div>
             ))}
           </div>
-          <p style={{ color: '#333', fontSize: '11px', textAlign: 'center', marginTop: '24px' }}>Exclusivo para Mentoradas Andressa Mallinsk 🔥</p>
+          <p style={{ color: '#777', fontSize: '11px', textAlign: 'center', marginTop: '24px' }}>Exclusivo para Mentoradas Andressa Mallinsk 🔥</p>
         </div>
       </div>
     </div>

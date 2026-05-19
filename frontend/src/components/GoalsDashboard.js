@@ -101,7 +101,7 @@ export default function GoalsDashboard() {
   const pct = goal ? Math.min(100, Math.round((goal.current_revenue / goal.monthly_target) * 100)) : 0;
   const done = (Array.isArray(actions) ? actions : []).filter(a => a.completed).length;
 
-  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#555' }}>Carregando...</div>;
+  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#999' }}>Carregando...</div>;
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: '28px', background: '#080808' }}>
@@ -109,7 +109,7 @@ export default function GoalsDashboard() {
       {/* Header */}
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '22px', fontWeight: '600', color: '#E0E0E0', letterSpacing: '-0.02em' }}>Dashboard</h1>
-        <p style={{ color: '#555', fontSize: '13px', marginTop: '4px' }}>{month} {year}</p>
+        <p style={{ color: '#999', fontSize: '13px', marginTop: '4px' }}>{month} {year}</p>
       </div>
 
       {/* Cards de métricas */}
@@ -122,7 +122,7 @@ export default function GoalsDashboard() {
           <div key={label} style={{ background: '#111', border: '1px solid #1A1A1A', borderRadius: '12px', padding: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
               <Icon size={15} style={{ color: accent }} />
-              <span style={{ color: '#555', fontSize: '12px' }}>{label}</span>
+              <span style={{ color: '#999', fontSize: '12px' }}>{label}</span>
             </div>
             <p style={{ fontSize: '24px', fontWeight: '700', color: '#E0E0E0' }}>{value}</p>
           </div>
@@ -166,7 +166,7 @@ export default function GoalsDashboard() {
             </button>
           </div>
           {actions.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#333', padding: '40px', fontSize: '13px' }}>
+            <div style={{ textAlign: 'center', color: '#777', padding: '40px', fontSize: '13px' }}>
               Nenhuma ação ainda. A Estrategista pode gerar as ações da semana para você!
             </div>
           ) : actions.map(a => (
@@ -175,12 +175,12 @@ export default function GoalsDashboard() {
                 {a.completed ? <CheckCircle size={18} /> : <Circle size={18} />}
               </button>
               <span style={{ flex: 1, fontSize: '13px', color: a.completed ? '#444' : '#CCC', textDecoration: a.completed ? 'line-through' : 'none' }}>{a.title}</span>
-              <button onClick={() => deleteAction(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#333', padding: 0, display: 'flex' }}>
+              <button onClick={() => deleteAction(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#777', padding: 0, display: 'flex' }}>
                 <Trash2 size={13} />
               </button>
             </div>
           ))}
-          {actions.length > 0 && <p style={{ color: '#444', fontSize: '12px', textAlign: 'right' }}>{done}/{actions.length} concluídas</p>}
+          {actions.length > 0 && <p style={{ color: '#888', fontSize: '12px', textAlign: 'right' }}>{done}/{actions.length} concluídas</p>}
         </div>
       )}
 
@@ -210,7 +210,7 @@ export default function GoalsDashboard() {
                     {stageleads.map(l => (
                       <div key={l.id} style={{ background: '#111', border: '1px solid #1A1A1A', borderRadius: '8px', padding: '10px 12px' }}>
                         <p style={{ fontSize: '12px', fontWeight: '500', color: '#CCC', marginBottom: '4px' }}>{l.name}</p>
-                        <p style={{ fontSize: '11px', color: '#555' }}>{l.phone}</p>
+                        <p style={{ fontSize: '11px', color: '#999' }}>{l.phone}</p>
                         <div style={{ display: 'flex', gap: '4px', marginTop: '8px', flexWrap: 'wrap' }}>
                           {STAGES.filter(s => s.id !== id).map(s => (
                             <button key={s.id} onClick={() => moveLead(l.id, s.id)}
@@ -237,11 +237,11 @@ export default function GoalsDashboard() {
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '11px', color: '#666', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>Meta do Mês (R$)</label>
+              <label style={{ display: 'block', fontSize: '11px', color: '#AAA', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>Meta do Mês (R$)</label>
               <input type="number" className="fire-input" value={goalForm.monthly_target} onChange={e => setGoalForm(f => ({ ...f, monthly_target: e.target.value }))} placeholder={goal?.monthly_target || '10000'} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '11px', color: '#666', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>Faturamento Atual (R$)</label>
+              <label style={{ display: 'block', fontSize: '11px', color: '#AAA', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>Faturamento Atual (R$)</label>
               <input type="number" className="fire-input" value={goalForm.current_revenue} onChange={e => setGoalForm(f => ({ ...f, current_revenue: e.target.value }))} placeholder={goal?.current_revenue || '0'} />
             </div>
             <button onClick={saveGoal} className="fire-btn" style={{ width: '100%', padding: '12px' }}>Salvar Meta</button>

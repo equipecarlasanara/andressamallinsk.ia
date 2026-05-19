@@ -37,7 +37,7 @@ export default function ImageEditor() {
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: '28px', background: '#080808' }}>
       <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#E0E0E0', marginBottom: '6px' }}>Editor de Fotos</h1>
-      <p style={{ color: '#555', fontSize: '13px', marginBottom: '28px' }}>Envie uma imagem e use comandos de texto para editá-la com IA.</p>
+      <p style={{ color: '#999', fontSize: '13px', marginBottom: '28px' }}>Envie uma imagem e use comandos de texto para editá-la com IA.</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', maxWidth: '900px' }}>
         {/* Original */}
@@ -47,13 +47,13 @@ export default function ImageEditor() {
             {preview ? (
               <img src={preview} alt="Original" style={{ width: '100%', borderRadius: '8px', display: 'block' }} />
             ) : (
-              <><Upload size={28} style={{ color: '#C0392B', margin: '0 auto 8px' }} /><p style={{ color: '#666', fontSize: '13px' }}>Clique para enviar</p></>
+              <><Upload size={28} style={{ color: '#C0392B', margin: '0 auto 8px' }} /><p style={{ color: '#AAA', fontSize: '13px' }}>Clique para enviar</p></>
             )}
             <input type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
           </label>
 
           <div style={{ marginTop: '16px' }}>
-            <label style={{ display: 'block', fontSize: '11px', color: '#666', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '11px', color: '#AAA', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
               Comando de Edição
             </label>
             <textarea value={prompt} onChange={e => setPrompt(e.target.value)}
@@ -73,7 +73,7 @@ export default function ImageEditor() {
           <h3 style={{ color: '#E0E0E0', fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}>Imagem Editada</h3>
           {loading && (
             <div style={{ aspectRatio: '1', background: '#0A0A0A', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pulse 1.5s infinite' }}>
-              <p style={{ color: '#444', fontSize: '13px' }}>Processando...</p>
+              <p style={{ color: '#888', fontSize: '13px' }}>Processando...</p>
             </div>
           )}
           {result && !loading && (
@@ -86,7 +86,7 @@ export default function ImageEditor() {
           )}
           {!result && !loading && (
             <div style={{ aspectRatio: '1', background: '#0A0A0A', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <p style={{ color: '#333', fontSize: '13px' }}>Resultado aparecerá aqui</p>
+              <p style={{ color: '#777', fontSize: '13px' }}>Resultado aparecerá aqui</p>
             </div>
           )}
         </div>

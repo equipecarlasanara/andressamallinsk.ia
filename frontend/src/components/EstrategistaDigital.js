@@ -88,7 +88,7 @@ export default function EstrategistaDigital() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(192,57,43,0.1)', border: '1px solid rgba(192,57,43,0.3)', borderRadius: '8px', padding: '6px 12px' }}>
               <FileText size={13} style={{ color: '#C0392B' }} />
               <span style={{ color: '#C0606A', fontSize: '12px', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{plan.filename}</span>
-              <button onClick={removePlan} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666', padding: 0, display: 'flex' }}>
+              <button onClick={removePlan} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#AAA', padding: 0, display: 'flex' }}>
                 <X size={12} />
               </button>
             </div>
@@ -101,7 +101,7 @@ export default function EstrategistaDigital() {
           )}
           <input ref={fileRef} type="file" accept=".pdf" onChange={uploadPlan} style={{ display: 'none' }} />
           <button onClick={() => { if (window.confirm('Reiniciar conversa?')) setMsgs([{ role: 'ai', text: 'Nova conversa iniciada! Como posso te ajudar, Leoa? 🔥' }]); }}
-            style={{ background: 'none', border: '1px solid #1A0505', borderRadius: '8px', padding: '7px', color: '#444', cursor: 'pointer', display: 'flex' }}>
+            style={{ background: 'none', border: '1px solid #1A0505', borderRadius: '8px', padding: '7px', color: '#888', cursor: 'pointer', display: 'flex' }}>
             <Trash2 size={13} />
           </button>
         </div>
