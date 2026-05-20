@@ -902,7 +902,17 @@ Seja direta, firme e acionável.`;
       let personDescription = "";
       if (base64Img) {
         try {
-          const descPrompt = "Descreva detalhadamente a fisionomia e traços físicos da pessoa nesta imagem (idade aproximada, etnia, gênero, cabelo, formato do rosto, olhos, expressão) para que uma inteligência artificial possa recriá-la fielmente em outro cenário. Seja conciso e focado apenas nos traços físicos.";
+          const descPrompt = `Analyze the person's face in this image and provide a highly detailed physical description in English for an AI image generator (like Imagen) to recreate this exact person's face and likeness as closely as possible.
+Be extremely detailed about:
+1. Face details: precise face shape, forehead, cheekbones, chin, jawline.
+2. Hair: exact texture, type (e.g. curly, coiled, afro-textured, straight, wavy), color, length, volume, parting.
+3. Eyes: shape, eyelid type, color, eyebrows thickness and arch.
+4. Nose: bridge shape, width, nostril size.
+5. Mouth: lip thickness, shape, smile, teeth visibility.
+6. Skin: exact color tone, complexion, undertone, facial details.
+7. Ethnicity, gender, and approximate age.
+
+Write the description in a single paragraph, focusing entirely on facial likeness. Do not mention the background or clothes. Write ONLY in English.`;
           const { text } = await callGemini(env.GEMINI_API_KEY, "gemini-2.0-flash", "", [], descPrompt, base64Img);
           personDescription = text;
         } catch (e) {
@@ -910,22 +920,32 @@ Seja direta, firme e acionável.`;
         }
       }
 
+      let englishPrompt = prompt;
+      try {
+        const translatePrompt = `Translate this image scenario prompt to English, making it natural and descriptive for an AI image generator: "${prompt}". Respond only with the English translation.`;
+        const { text } = await callGemini(env.GEMINI_API_KEY, "gemini-2.0-flash", "", [], translatePrompt);
+        englishPrompt = text;
+      } catch (e) {
+        console.log("Translation failed:", e.message);
+      }
+
       const styles = [
-        "fotografia profissional premium, iluminação de estúdio",
-        "retrato corporativo de alto luxo, foco nítido",
-        "estilo cinematográfico 8k, luz natural",
-        "plano americano, nitidez absoluta na face",
-        "fotografia editorial, pele realista, textura natural",
-        "retrato artístico hiper-realista"
+        "premium professional photography, studio lighting",
+        "corporate portrait of high luxury, sharp focus",
+        "cinematic style 8k, natural light",
+        "medium shot, absolute facial sharpness",
+        "editorial photography, realistic skin, natural texture",
+        "hyper-realistic artistic portrait"
       ];
 
       const results = await Promise.allSettled(
         Array.from({ length: count }, async (_, i) => {
           const style = styles[i % styles.length];
-          let fullPrompt = `Gere 1 foto profissional, retrato de alta qualidade. Cenário: ${prompt}. Estilo: ${style}.`;
+          let fullPrompt = `A high-quality professional portrait, editorial style. Scenario: ${englishPrompt}. Style: ${style}.`;
           if (personDescription) {
-            fullPrompt += ` O sujeito da foto é a seguinte pessoa descrita fisicamente: ${personDescription}`;
+            fullPrompt += ` The subject of the photo is a person with the following appearance: ${personDescription}.`;
           }
+          fullPrompt += ` Ensure highly realistic facial features, natural skin texture, accurate facial details, keeping the identity consistent with the description.`;
           const { images } = await callGemini(
             env.GEMINI_API_KEY, "imagen-4.0-generate-001",
             null, [], fullPrompt
@@ -957,7 +977,7 @@ Seja direta, firme e acionável.`;
 
       let editPrompt = prompt;
       try {
-        const descPrompt = `Descreva esta imagem com precisão, aplicando obrigatoriamente as alterações solicitadas pelo usuário: "${prompt}". A descrição resultante deve ser uma descrição de cena completa e detalhada para guiar um gerador de imagens a criar a imagem final alterada.`;
+        const descPrompt = `Analyze the provided image and write a detailed scene description in English that incorporates the following changes requested by the user: "${prompt}". The final description should be optimized for a text-to-image AI generator to produce the updated scene. Write ONLY the final description in English.`;
         const { text } = await callGemini(env.GEMINI_API_KEY, "gemini-2.0-flash", "", [], descPrompt, base64Img);
         editPrompt = text;
       } catch (e) {
