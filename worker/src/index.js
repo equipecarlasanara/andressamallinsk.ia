@@ -110,6 +110,29 @@ async function authenticate(request, env) {
 // ---------- GEMINI AI ----------
 
 async function callGemini(apiKey, model, systemMessage, history, userText, imageBase64 = null) {
+  if (model.includes("image-generation") || model.startsWith("imagen-")) {
+    const prompt = userText;
+    const body = {
+      prompt,
+      numberOfImages: 1,
+      outputMimeType: "image/jpeg",
+      aspectRatio: "1:1"
+    };
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:generateImages?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      }
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "Imagen API error");
+    const imgBytes = data.generatedImages?.[0]?.image?.imageBytes;
+    if (!imgBytes) throw new Error("Sem resposta da IA de imagem");
+    return { text: "", images: [{ mimeType: "image/jpeg", data: imgBytes }] };
+  }
+
   const contents = [];
 
   // Adicionar histórico
@@ -651,12 +674,41 @@ Finalize com CTA direto para DM. Voz firme e direta da Estrategista.`;
 
   // Chat unificado (diagnostico, conselheira, chat)
   const chatPaths = ["/ai/chat", "/ai/diagnostico", "/ai/conselheira"];
+
+  if (chatPaths.includes(path) && method === "GET") {
+    const userId = await authenticate(request, env);
+    if (!userId) return error("Token inválido", 401);
+    try {
+      const sessionType = path.split("/").pop(); // "chat", "diagnostico", "conselheira"
+      const sessionId = `${sessionType}_${userId}`;
+      const [histDoc] = await dbQuery(env, "SELECT history FROM chat_history WHERE session_id = ?", [sessionId]);
+      const history = histDoc ? JSON.parse(histDoc.history) : [];
+      return json(history);
+    } catch (e) {
+      return error(`Erro ao recuperar histórico: ${e.message}`, 500);
+    }
+  }
+
+  if (chatPaths.includes(path) && method === "DELETE") {
+    const userId = await authenticate(request, env);
+    if (!userId) return error("Token inválido", 401);
+    try {
+      const sessionType = path.split("/").pop();
+      const sessionId = `${sessionType}_${userId}`;
+      await dbRun(env, "DELETE FROM chat_history WHERE session_id = ?", [sessionId]);
+      return json({ success: true });
+    } catch (e) {
+      return error(`Erro ao reiniciar conversa: ${e.message}`, 500);
+    }
+  }
+
   if (chatPaths.includes(path) && method === "POST") {
     const userId = await authenticate(request, env);
     if (!userId) return error("Token inválido", 401);
     try {
       const body = await request.json();
-      const sessionId = body.session_id || `unified_${userId}`;
+      const sessionType = path.split("/").pop(); // "chat", "diagnostico", "conselheira"
+      const sessionId = `${sessionType}_${userId}`;
 
       // Recuperar histórico
       const [histDoc] = await dbQuery(env, "SELECT history FROM chat_history WHERE session_id = ?", [sessionId]);
@@ -706,7 +758,9 @@ Finalize com CTA direto para DM. Voz firme e direta da Estrategista.`;
       // Sincronizar tarefas se houver marcador
       if (response.includes("PROJETAR_TAREFA:")) {
         const tasks = [...response.matchAll(/PROJETAR_TAREFA:\s*(.*?)\s*\|\s*(.*)/g)];
-        const weekStart = new Date().toISOString().slice(0, 10);
+        const d = new Date(); const day = d.getDay();
+        d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
+        const weekStart = d.toISOString().split('T')[0];
         for (const [, title, desc] of tasks) {
           const ts = now();
           await dbRun(env,

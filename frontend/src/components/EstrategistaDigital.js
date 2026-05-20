@@ -12,7 +12,6 @@ export default function EstrategistaDigital() {
   }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sessionId] = useState(`s_${Date.now()}`);
   const [plan, setPlan] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadDone, setUploadDone] = useState(false);
@@ -26,7 +25,24 @@ export default function EstrategistaDigital() {
     } catch {}
   }, []);
 
-  useEffect(() => { loadPlan(); }, [loadPlan]);
+  const loadHistory = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${API}/ai/chat`, auth());
+      if (data && data.length > 0) {
+        const formatted = data.map(h => ({
+          role: h.role === 'model' ? 'ai' : 'user',
+          text: Array.isArray(h.parts) ? h.parts[0] : h.parts
+        }));
+        setMsgs(formatted);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadPlan();
+    loadHistory();
+  }, [loadPlan, loadHistory]);
+
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs]);
 
   const uploadPlan = async (e) => {
@@ -61,7 +77,7 @@ export default function EstrategistaDigital() {
     setMsgs(m => [...m, { role: 'user', text }]);
     setLoading(true);
     try {
-      const { data } = await axios.post(`${API}/ai/chat`, { message: text, session_id: sessionId }, auth());
+      const { data } = await axios.post(`${API}/ai/chat`, { message: text }, auth());
       const clean = data.response.replace(/PROJETAR_TAREFA:.*$/gm, '').trim();
       setMsgs(m => [...m, { role: 'ai', text: clean }]);
       if (data.response.includes('PROJETAR_TAREFA:')) {
@@ -100,7 +116,16 @@ export default function EstrategistaDigital() {
             </button>
           )}
           <input ref={fileRef} type="file" accept=".pdf" onChange={uploadPlan} style={{ display: 'none' }} />
-          <button onClick={() => { if (window.confirm('Reiniciar conversa?')) setMsgs([{ role: 'ai', text: 'Nova conversa iniciada! Como posso te ajudar, Leoa? 🔥' }]); }}
+          <button onClick={async () => {
+            if (window.confirm('Reiniciar conversa?')) {
+              try {
+                await axios.delete(`${API}/ai/chat`, auth());
+                setMsgs([{ role: 'ai', text: 'Nova conversa iniciada! Como posso te ajudar, Leoa? 🔥' }]);
+              } catch {
+                alert('Erro ao reiniciar conversa no servidor.');
+              }
+            }
+          }}
             style={{ background: 'none', border: '1px solid #1A0505', borderRadius: '8px', padding: '7px', color: '#888', cursor: 'pointer', display: 'flex' }}>
             <Trash2 size={13} />
           </button>

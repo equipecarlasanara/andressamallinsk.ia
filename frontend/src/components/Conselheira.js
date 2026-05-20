@@ -13,14 +13,34 @@ export default function Conselheira() {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId] = useState(`conselheira_${Date.now()}`);
   const messagesEndRef = useRef(null);
 
+  const loadHistory = async () => {
+    try {
+      const response = await axios.get(`${API}/ai/conselheira`, getAuthHeaders());
+      if (response.data && response.data.length > 0) {
+        const formatted = response.data.map(h => ({
+          role: h.role === 'model' ? 'assistant' : 'user',
+          content: Array.isArray(h.parts) ? h.parts[0] : h.parts
+        }));
+        setMessages(formatted);
+      } else {
+        setMessages([{
+          role: 'assistant',
+          content: 'Oi, leoa! Sou sua conselheira. Me conta o que está passando pela sua cabeça. Vou te dar minha opinião honesta, tá?'
+        }]);
+      }
+    } catch (e) {
+      console.error(e);
+      setMessages([{
+        role: 'assistant',
+        content: 'Oi, leoa! Sou sua conselheira. Me conta o que está passando pela sua cabeça. Vou te dar minha opinião honesta, tá?'
+      }]);
+    }
+  };
+
   useEffect(() => {
-    setMessages([{
-      role: 'assistant',
-      content: 'Oi, leoa! Sou sua conselheira. Me conta o que está passando pela sua cabeça. Vou te dar minha opinião honesta, tá?'
-    }]);
+    loadHistory();
   }, []);
 
   useEffect(() => {
@@ -39,7 +59,7 @@ export default function Conselheira() {
     try {
       const response = await axios.post(
         `${API}/ai/conselheira`,
-        { message: userMessage, session_id: sessionId },
+        { message: userMessage },
         getAuthHeaders()
       );
       setMessages(prev => [...prev, { role: 'assistant', content: response.data.response }]);
