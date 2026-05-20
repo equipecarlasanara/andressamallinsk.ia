@@ -113,13 +113,17 @@ async function callGemini(apiKey, model, systemMessage, history, userText, image
   if (model.includes("image-generation") || model.startsWith("imagen-")) {
     const prompt = userText;
     const body = {
-      prompt,
-      numberOfImages: 1,
-      outputMimeType: "image/jpeg",
-      aspectRatio: "1:1"
+      instances: [
+        { prompt }
+      ],
+      parameters: {
+        sampleCount: 1,
+        outputMimeType: "image/jpeg",
+        aspectRatio: "1:1"
+      }
     };
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:generateImages?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -128,7 +132,7 @@ async function callGemini(apiKey, model, systemMessage, history, userText, image
     );
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || "Imagen API error");
-    const imgBytes = data.generatedImages?.[0]?.image?.imageBytes;
+    const imgBytes = data.predictions?.[0]?.bytesBase64Encoded;
     if (!imgBytes) throw new Error("Sem resposta da IA de imagem");
     return { text: "", images: [{ mimeType: "image/jpeg", data: imgBytes }] };
   }
@@ -146,8 +150,14 @@ async function callGemini(apiKey, model, systemMessage, history, userText, image
   // Mensagem atual
   const parts = [{ text: userText }];
   if (imageBase64) {
-    const imgData = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
-    parts.push({ inlineData: { mimeType: "image/jpeg", data: imgData } });
+    let mimeType = "image/jpeg";
+    let imgData = imageBase64;
+    if (imageBase64.includes(",")) {
+      const match = imageBase64.match(/data:(.*?);base64,/);
+      if (match) mimeType = match[1];
+      imgData = imageBase64.split(",")[1];
+    }
+    parts.push({ inlineData: { mimeType, data: imgData } });
   }
   contents.push({ role: "user", parts });
 
@@ -888,6 +898,18 @@ Seja direta, firme e acionável.`;
       const { prompt, baseImage, numImages = 4 } = body;
       const count = Math.min(numImages, 6);
 
+      const base64Img = baseImage?.base64 || baseImage;
+      let personDescription = "";
+      if (base64Img) {
+        try {
+          const descPrompt = "Descreva detalhadamente a fisionomia e traços físicos da pessoa nesta imagem (idade aproximada, etnia, gênero, cabelo, formato do rosto, olhos, expressão) para que uma inteligência artificial possa recriá-la fielmente em outro cenário. Seja conciso e focado apenas nos traços físicos.";
+          const { text } = await callGemini(env.GEMINI_API_KEY, "gemini-2.0-flash", "", [], descPrompt, base64Img);
+          personDescription = text;
+        } catch (e) {
+          console.log("Erro ao obter descrição fisionômica:", e.message);
+        }
+      }
+
       const styles = [
         "fotografia profissional premium, iluminação de estúdio",
         "retrato corporativo de alto luxo, foco nítido",
@@ -900,11 +922,13 @@ Seja direta, firme e acionável.`;
       const results = await Promise.allSettled(
         Array.from({ length: count }, async (_, i) => {
           const style = styles[i % styles.length];
-          const fullPrompt = `COMANDO: Gere 1 foto profissional com PRESERVAÇÃO DE IDENTIDADE 100%. Rosto reconhecível. Cenário: ${prompt}. Estilo: ${style}.`;
+          let fullPrompt = `Gere 1 foto profissional, retrato de alta qualidade. Cenário: ${prompt}. Estilo: ${style}.`;
+          if (personDescription) {
+            fullPrompt += ` O sujeito da foto é a seguinte pessoa descrita fisicamente: ${personDescription}`;
+          }
           const { images } = await callGemini(
-            env.GEMINI_API_KEY, "gemini-2.0-flash-preview-image-generation",
-            IMAGE_PROTECTION_SYSTEM, [], fullPrompt,
-            baseImage?.base64 || null
+            env.GEMINI_API_KEY, "imagen-4.0-generate-001",
+            null, [], fullPrompt
           );
           if (images.length > 0) return { id: i + 1, imageUrl: `data:${images[0].mimeType};base64,${images[0].data}` };
           return null;
@@ -931,11 +955,18 @@ Seja direta, firme e acionável.`;
       const base64Img = image?.base64 || image;
       if (!base64Img || !prompt) return error("Imagem e prompt são obrigatórios");
 
+      let editPrompt = prompt;
+      try {
+        const descPrompt = `Descreva esta imagem com precisão, aplicando obrigatoriamente as alterações solicitadas pelo usuário: "${prompt}". A descrição resultante deve ser uma descrição de cena completa e detalhada para guiar um gerador de imagens a criar a imagem final alterada.`;
+        const { text } = await callGemini(env.GEMINI_API_KEY, "gemini-2.0-flash", "", [], descPrompt, base64Img);
+        editPrompt = text;
+      } catch (e) {
+        console.log("Erro ao descrever edição:", e.message);
+      }
+
       const { images } = await callGemini(
-        env.GEMINI_API_KEY, "gemini-2.0-flash-preview-image-generation",
-        IMAGE_PROTECTION_SYSTEM, [],
-        `TASK: Edite esta imagem com base em: "${prompt}". SEM alterar rosto, feições ou identidade. Fidelidade biométrica 100%.`,
-        base64Img
+        env.GEMINI_API_KEY, "imagen-4.0-generate-001",
+        null, [], editPrompt
       );
 
       if (images.length > 0) {
